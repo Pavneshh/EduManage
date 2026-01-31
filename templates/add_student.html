@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Student | Student Management System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/dashboard.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+        }
+        
+        /* Sidebar Styles */
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+        
+        .sidebar-header {
+            padding: 25px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .logo i {
+            font-size: 28px;
+            color: #4f46e5;
+        }
+        
+        .logo-text {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 22px;
+            color: white;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+        
+        .user-avatar i {
+            font-size: 40px;
+            color: #9ca3af;
+        }
+        
+        .user-details h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: white;
+        }
+        
+        .user-details p {
+            font-size: 13px;
+            color: #9ca3af;
+        }
+        
+        .sidebar-menu {
+            flex: 1;
+            padding: 20px 0;
+            list-style: none;
+        }
+        
+        .menu-item {
+            margin: 5px 15px;
+        }
+        
+        .menu-item a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 20px;
+            color: #cbd5e1;
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .menu-item a:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .menu-item.active a {
+            background: #4f46e5;
+            color: white;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+        
+        .menu-item i {
+            width: 20px;
+            text-align: center;
+            font-size: 16px;
+        }
+        
+        .sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 20px;
+            color: #ef4444;
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            background: rgba(239, 68, 68, 0.1);
+        }
+        
+        .logout-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: #dc2626;
+        }
+        
+        /* Main Content Styles */
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 30px;
+            min-height: 100vh;
+        }
+        
+        .form-container {
+            max-width: 750px;
+            margin: 0 auto;
+        }
+        
+        .form-card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .form-header h1 {
+            font-size: 28px;
+            color: #1f2937;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .form-header p {
+            color: #6b7280;
+            font-size: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+            font-size: 14px;
+        }
+        
+        .form-group label i {
+            color: #4f46e5;
+            margin-right: 8px;
+            width: 20px;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        
+        textarea.form-control {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .required::after {
+            content: " *";
+            color: #ef4444;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 2px solid #f3f4f6;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: #4f46e5;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #4338ca;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #4b5563;
+            transform: translateY(-2px);
+        }
+        
+        .alert {
+            padding: 14px 18px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+        
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .info-box {
+            background: #f0f9ff;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #0ea5e9;
+            margin-bottom: 20px;
+        }
+        
+        .info-box p {
+            margin: 0;
+            color: #0369a1;
+            font-size: 14px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        .info-box i {
+            margin-top: 2px;
+            color: #0ea5e9;
+        }
+        
+        .student-id-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+        
+        .student-id-box h3 {
+            font-size: 16px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .student-id-box p {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 80px;
+            }
+            
+            .logo-text,
+            .user-details,
+            .menu-item span,
+            .logout-btn span {
+                display: none;
+            }
+            
+            .main-content {
+                margin-left: 80px;
+            }
+            
+            .logo,
+            .menu-item a,
+            .logout-btn {
+                justify-content: center;
+            }
+            
+            .user-info {
+                justify-content: center;
+                padding: 10px;
+            }
+            
+            .user-avatar i {
+                font-size: 30px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-card {
+                padding: 25px;
+            }
+            
+            .form-header h1 {
+                font-size: 24px;
+            }
+            
+            .sidebar {
+                width: 70px;
+            }
+            
+            .main-content {
+                margin-left: 70px;
+                padding: 20px;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .btn {
+                width: 100%;
+            }
+            
+            .form-container {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-graduation-cap"></i>
+                <span class="logo-text">EduManage</span>
+            </div>
+            <div class="user-info">
+                <div class="user-avatar">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <div class="user-details">
+                    <h3>{{ username }}</h3>
+                    <p>Administrator</p>
+                </div>
+            </div>
+        </div>
+        
+        <ul class="sidebar-menu">
+            <li class="menu-item"><a href="/dashboard"><i class="fas fa-home"></i><span>Dashboard</span></a></li>
+            <li class="menu-item active"><a href="/students"><i class="fas fa-users"></i><span>Students</span></a></li>
+            <li class="menu-item"><a href="/teachers"><i class="fas fa-chalkboard-teacher"></i><span>Teachers</span></a></li>
+            <li class="menu-item"><a href="/courses"><i class="fas fa-book"></i><span>Courses</span></a></li>
+            <li class="menu-item"><a href="#"><i class="fas fa-calendar-alt"></i><span>Schedule</span></a></li>
+            <li class="menu-item"><a href="#"><i class="fas fa-chart-bar"></i><span>Analytics</span></a></li>
+            <li class="menu-item"><a href="#"><i class="fas fa-cog"></i><span>Settings</span></a></li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <a href="/logout" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="form-container">
+            <div class="form-card">
+                <div class="form-header">
+                    <h1><i class="fas fa-user-plus"></i> Add New Student</h1>
+                    <p>Fill in the student details below. Fields marked with * are required.</p>
+                </div>
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">
+                                <i class="fas fa-{% if category == 'success' %}check-circle{% else %}exclamation-circle{% endif %}"></i>
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Student ID Generation Info -->
+                <div class="student-id-box">
+                    <h3><i class="fas fa-id-card"></i> Automatic Student ID Generation</h3>
+                    <p>A unique student ID will be automatically generated upon successful submission.</p>
+                </div>
+
+                <form method="POST" action="/add-student">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="name" class="required">
+                                <i class="fas fa-user"></i> Full Name
+                            </label>
+                            <input type="text" id="name" name="name" class="form-control" placeholder="Enter student's full name" required value="{{ form_data.name if form_data else '' }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email" class="required">
+                                <i class="fas fa-envelope"></i> Email Address
+                            </label>
+                            <input type="email" id="email" name="email" class="form-control" placeholder="student@example.com" required value="{{ form_data.email if form_data else '' }}">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="course" class="required">
+                                <i class="fas fa-book-open"></i> Course/Program
+                            </label>
+                            <input type="text" id="course" name="course" class="form-control" placeholder="e.g., Computer Science, Business Administration" required value="{{ form_data.course if form_data else '' }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="phone">
+                                <i class="fas fa-phone"></i> Phone Number
+                            </label>
+                            <input type="tel" id="phone" name="phone" class="form-control" placeholder="+91 9876543210" value="{{ form_data.phone if form_data else '' }}">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="birth_date">
+                                <i class="fas fa-birthday-cake"></i> Date of Birth
+                            </label>
+                            <input type="date" id="birth_date" name="birth_date" class="form-control" value="{{ form_data.birth_date if form_data else '' }}" max="{{ max_date }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="enrollment_year" class="required">
+                                <i class="fas fa-calendar"></i> Enrollment Year
+                            </label>
+                            <select id="enrollment_year" name="enrollment_year" class="form-control" required>
+                                <option value="">Select Year</option>
+                                {% for year in enrollment_years %}
+                                <option value="{{ year }}" {% if form_data and form_data.enrollment_year == year|string %}selected{% elif not form_data and year == current_year %}selected{% endif %}>
+                                    {{ year }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="address">
+                            <i class="fas fa-map-marker-alt"></i> Address
+                        </label>
+                        <textarea id="address" name="address" class="form-control" placeholder="Enter student's full address" rows="3">{{ form_data.address if form_data else '' }}</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="guardian_name">
+                            <i class="fas fa-user-friends"></i> Guardian/Parent Name
+                        </label>
+                        <input type="text" id="guardian_name" name="guardian_name" class="form-control" placeholder="Enter guardian's full name" value="{{ form_data.guardian_name if form_data else '' }}">
+                    </div>
+
+                    <div class="form-group">
+                        <div class="info-box">
+                            <p>
+                                <i class="fas fa-info-circle"></i> 
+                                All new students will be registered with "Active" status by default. You can update their status and view additional details from the students management page.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Add Student
+                        </button>
+                        <a href="/students" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

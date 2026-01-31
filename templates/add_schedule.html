@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create New Schedule | Student Management System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Add the same CSS styles from schedules.html here */
+        /* I'll provide a simplified version for brevity */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); min-height: 100vh; }
+        
+        .sidebar { width: 260px; background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); color: white; display: flex; flex-direction: column; height: 100vh; position: fixed; left: 0; top: 0; }
+        .main-content { flex: 1; margin-left: 260px; padding: 30px; min-height: 100vh; }
+        
+        .form-container { max-width: 800px; margin: 0 auto; }
+        .form-card { background: white; border-radius: 16px; padding: 40px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); }
+        .form-header { margin-bottom: 30px; text-align: center; }
+        .form-header h1 { font-size: 28px; color: #1f2937; margin-bottom: 10px; }
+        .form-header p { color: #6b7280; }
+        
+        .form-group { margin-bottom: 24px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #374151; font-size: 14px; }
+        .form-control { width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 15px; transition: all 0.3s ease; }
+        .form-control:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+        textarea.form-control { min-height: 100px; resize: vertical; }
+        
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .required::after { content: " *"; color: #ef4444; }
+        
+        .btn { padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; border: none; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-primary { background: #4f46e5; color: white; }
+        .btn-primary:hover { background: #4338ca; }
+        .btn-secondary { background: #6b7280; color: white; }
+        .btn-secondary:hover { background: #4b5563; }
+        
+        .schedule-type-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 10px; }
+        .type-option { border: 2px solid #e5e7eb; border-radius: 10px; padding: 20px; cursor: pointer; transition: all 0.3s ease; }
+        .type-option:hover { border-color: #4f46e5; background: #f5f3ff; }
+        .type-option.selected { border-color: #4f46e5; background: #f5f3ff; }
+        .type-icon { font-size: 32px; color: #4f46e5; margin-bottom: 10px; }
+        .type-title { font-weight: 600; margin-bottom: 5px; }
+        .type-desc { font-size: 13px; color: #6b7280; }
+        
+        .info-box { background: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #0ea5e9; margin: 20px 0; }
+        .info-box p { margin: 0; color: #0369a1; font-size: 14px; display: flex; align-items: flex-start; gap: 10px; }
+        
+        @media (max-width: 768px) {
+            .form-row { grid-template-columns: 1fr; }
+            .schedule-type-options { grid-template-columns: 1fr; }
+            .form-card { padding: 25px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Add sidebar navigation (same as schedules.html) -->
+    <!-- For brevity, I'm showing only the form content -->
+    
+    <main class="main-content">
+        <div class="form-container">
+            <div class="form-card">
+                <div class="form-header">
+                    <h1><i class="fas fa-calendar-plus"></i> Create New Academic Schedule</h1>
+                    <p>Configure your academic term schedule based on the preferred scheduling type</p>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}" style="margin-bottom: 25px; padding: 14px 18px; border-radius: 8px; background: {% if category == 'success' %}#d1fae5{% else %}#fee2e2{% endif %}; color: {% if category == 'success' %}#065f46{% else %}#991b1b{% endif %};">
+                                <i class="fas fa-{% if category == 'success' %}check-circle{% else %}exclamation-circle{% endif %}"></i>
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" action="/add-schedule">
+                    <div class="form-group">
+                        <label for="schedule_name" class="required">
+                            <i class="fas fa-calendar-alt"></i> Schedule Name
+                        </label>
+                        <input type="text" id="schedule_name" name="schedule_name" class="form-control" 
+                               placeholder="e.g., Fall 2024 Traditional Schedule" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="required">
+                            <i class="fas fa-clock"></i> Schedule Type
+                        </label>
+                        <div class="schedule-type-options">
+                            <div class="type-option" onclick="selectType('traditional')">
+                                <div class="type-icon"><i class="fas fa-clock"></i></div>
+                                <div class="type-title">Traditional</div>
+                                <div class="type-desc">6-8 periods per day (45-55 minutes)</div>
+                            </div>
+                            <div class="type-option" onclick="selectType('block')">
+                                <div class="type-icon"><i class="fas fa-th-large"></i></div>
+                                <div class="type-title">Block</div>
+                                <div class="type-desc">Longer periods (90 min), 4x4 or A/B</div>
+                            </div>
+                            <div class="type-option" onclick="selectType('year_round')">
+                                <div class="type-icon"><i class="fas fa-calendar-day"></i></div>
+                                <div class="type-title">Year-Round</div>
+                                <div class="type-desc">12-month calendar with flexible breaks</div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="schedule_type" name="schedule_type" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="academic_year" class="required">
+                                <i class="fas fa-calendar"></i> Academic Year
+                            </label>
+                            <select id="academic_year" name="academic_year" class="form-control" required>
+                                <option value="">Select Academic Year</option>
+                                {% for year in academic_years %}
+                                <option value="{{ year }}">{{ year }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="semester">
+                                <i class="fas fa-graduation-cap"></i> Semester/Term
+                            </label>
+                            <input type="text" id="semester" name="semester" class="form-control" 
+                                   placeholder="e.g., Fall Semester, Spring Term">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="start_date" class="required">
+                                <i class="fas fa-calendar-check"></i> Start Date
+                            </label>
+                            <input type="date" id="start_date" name="start_date" class="form-control" 
+                                   value="{{ current_date }}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="end_date" class="required">
+                                <i class="fas fa-calendar-times"></i> End Date
+                            </label>
+                            <input type="date" id="end_date" name="end_date" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">
+                            <i class="fas fa-align-left"></i> Description (Optional)
+                        </label>
+                        <textarea id="description" name="description" class="form-control" 
+                                  placeholder="Add any additional notes about this schedule..."></textarea>
+                    </div>
+
+                    <div class="info-box">
+                        <p>
+                            <i class="fas fa-info-circle"></i> 
+                            Based on the selected schedule type, default periods/blocks will be automatically created. 
+                            You can customize them after creating the schedule.
+                        </p>
+                    </div>
+
+                    <div class="form-actions" style="display: flex; gap: 15px; margin-top: 30px; padding-top: 25px; border-top: 2px solid #f3f4f6;">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Create Schedule
+                        </button>
+                        <a href="/schedules" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function selectType(type) {
+            document.getElementById('schedule_type').value = type;
+            
+            // Update UI
+            document.querySelectorAll('.type-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            
+            // Set default end date based on type
+            const startDate = document.getElementById('start_date').value;
+            if (startDate) {
+                const start = new Date(startDate);
+                let end = new Date(start);
+                
+                if (type === 'year_round') {
+                    end.setMonth(end.getMonth() + 12); // 1 year
+                } else {
+                    end.setMonth(end.getMonth() + 6); // 6 months
+                }
+                
+                document.getElementById('end_date').value = end.toISOString().split('T')[0];
+            }
+        }
+        
+        // Auto-set end date when start date changes
+        document.getElementById('start_date').addEventListener('change', function() {
+            const type = document.getElementById('schedule_type').value;
+            if (type) {
+                selectType(type); // Recalculate end date
+            }
+        });
+    </script>
+</body>
+</html>

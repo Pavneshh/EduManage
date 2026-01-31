@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Assignment | Student Management System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Base styles from assignments.html */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); min-height: 100vh; }
+        
+        .sidebar { width: 260px; background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); color: white; display: flex; flex-direction: column; height: 100vh; position: fixed; left: 0; top: 0; }
+        .main-content { flex: 1; margin-left: 260px; padding: 30px; min-height: 100vh; }
+        
+        .form-container { max-width: 800px; margin: 0 auto; }
+        .form-card { background: white; border-radius: 16px; padding: 40px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); }
+        .form-header { margin-bottom: 30px; text-align: center; }
+        .form-header h1 { font-size: 28px; color: #1f2937; margin-bottom: 10px; }
+        .form-header p { color: #6b7280; }
+        
+        .form-group { margin-bottom: 24px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #374151; font-size: 14px; }
+        .form-group label i { color: #4f46e5; margin-right: 8px; width: 20px; }
+        .form-control { width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 15px; transition: all 0.3s ease; }
+        .form-control:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+        textarea.form-control { min-height: 100px; resize: vertical; }
+        select.form-control { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; background-size: 16px; }
+        
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .required::after { content: " *"; color: #ef4444; }
+        
+        .btn { padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; border: none; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-primary { background: #4f46e5; color: white; }
+        .btn-primary:hover { background: #4338ca; }
+        .btn-secondary { background: #6b7280; color: white; }
+        .btn-secondary:hover { background: #4b5563; }
+        
+        .file-upload { border: 2px dashed #e5e7eb; border-radius: 8px; padding: 40px; text-align: center; transition: all 0.3s ease; }
+        .file-upload:hover { border-color: #4f46e5; background: #f5f3ff; }
+        .file-upload i { font-size: 48px; color: #9ca3af; margin-bottom: 15px; }
+        .file-input { display: none; }
+        .file-info { margin-top: 15px; font-size: 14px; color: #6b7280; }
+        .file-selected { color: #10b981; font-weight: 600; }
+        
+        .info-box { background: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #0ea5e9; margin: 20px 0; }
+        .info-box p { margin: 0; color: #0369a1; font-size: 14px; display: flex; align-items: flex-start; gap: 10px; }
+        
+        .alert { padding: 14px 18px; border-radius: 8px; margin-bottom: 25px; font-size: 14px; display: flex; align-items: center; gap: 10px; }
+        .alert-error { background: #fee2e2; color: #991b1b; border-left: 4px solid #ef4444; }
+        .alert-success { background: #d1fae5; color: #065f46; border-left: 4px solid #10b981; }
+        
+        @media (max-width: 768px) {
+            .form-row { grid-template-columns: 1fr; }
+            .form-card { padding: 25px; }
+            .sidebar { width: 70px; }
+            .main-content { margin-left: 70px; padding: 20px; }
+        }
+        
+        /* Sidebar styles (same as assignments.html) */
+        .sidebar-header { padding: 25px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        .logo { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+        .logo i { font-size: 28px; color: #4f46e5; }
+        .logo-text { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 22px; color: white; }
+        .user-info { display: flex; align-items: center; gap: 12px; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; margin-top: 10px; }
+        .user-avatar i { font-size: 40px; color: #9ca3af; }
+        .user-details h3 { font-size: 16px; font-weight: 600; margin-bottom: 4px; color: white; }
+        .user-details p { font-size: 13px; color: #9ca3af; }
+        .sidebar-menu { flex: 1; padding: 20px 0; list-style: none; }
+        .menu-item { margin: 5px 15px; }
+        .menu-item a { display: flex; align-items: center; gap: 12px; padding: 14px 20px; color: #cbd5e1; text-decoration: none; border-radius: 10px; transition: all 0.3s ease; font-weight: 500; }
+        .menu-item a:hover { background: rgba(255, 255, 255, 0.1); color: white; }
+        .menu-item.active a { background: #4f46e5; color: white; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
+        .menu-item i { width: 20px; text-align: center; font-size: 16px; }
+        .sidebar-footer { padding: 20px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+        .logout-btn { display: flex; align-items: center; gap: 12px; padding: 14px 20px; color: #ef4444; text-decoration: none; border-radius: 10px; transition: all 0.3s ease; font-weight: 500; background: rgba(239, 68, 68, 0.1); }
+        .logout-btn:hover { background: rgba(239, 68, 68, 0.2); color: #dc2626; }
+    </style>
+</head>
+<body>
+    <!-- Navigation Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-graduation-cap"></i>
+                <span class="logo-text">EduManage</span>
+            </div>
+            <div class="user-info">
+                <div class="user-avatar">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <div class="user-details">
+                    <h3>{{ username }}</h3>
+                    <p>Administrator</p>
+                </div>
+            </div>
+        </div>
+        
+        <ul class="sidebar-menu">
+            <li class="menu-item"><a href="/dashboard"><i class="fas fa-home"></i><span>Dashboard</span></a></li>
+            <li class="menu-item"><a href="/students"><i class="fas fa-users"></i><span>Students</span></a></li>
+            <li class="menu-item"><a href="/teachers"><i class="fas fa-chalkboard-teacher"></i><span>Teachers</span></a></li>
+            <li class="menu-item"><a href="/courses"><i class="fas fa-book"></i><span>Courses</span></a></li>
+            <li class="menu-item"><a href="/schedules"><i class="fas fa-calendar-alt"></i><span>Schedule</span></a></li>
+            <li class="menu-item active"><a href="/assignments"><i class="fas fa-tasks"></i><span>Assignments</span></a></li>
+            <li class="menu-item"><a href="#"><i class="fas fa-chart-bar"></i><span>Analytics</span></a></li>
+            <li class="menu-item"><a href="#"><i class="fas fa-cog"></i><span>Settings</span></a></li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <a href="/logout" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="form-container">
+            <div class="form-card">
+                <div class="form-header">
+                    <h1><i class="fas fa-tasks"></i> Add New Assignment</h1>
+                    <p>Create a new academic assignment and upload related files</p>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">
+                                <i class="fas fa-{% if category == 'success' %}check-circle{% else %}exclamation-circle{% endif %}"></i>
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" action="/add-assignment" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="assignment_name" class="required">
+                            <i class="fas fa-tag"></i> Assignment Name
+                        </label>
+                        <input type="text" id="assignment_name" name="assignment_name" class="form-control" 
+                               placeholder="e.g., Chapter 5 Homework, Final Project, Midterm Exam" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="assignment_type" class="required">
+                                <i class="fas fa-clipboard-list"></i> Assignment Type
+                            </label>
+                            <select id="assignment_type" name="assignment_type" class="form-control" required>
+                                <option value="">Select Type</option>
+                                <option value="homework">Homework</option>
+                                <option value="project">Project</option>
+                                <option value="quiz">Quiz</option>
+                                <option value="exam">Exam</option>
+                                <option value="lab">Lab Work</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="max_score">
+                                <i class="fas fa-star"></i> Maximum Score
+                            </label>
+                            <input type="number" id="max_score" name="max_score" class="form-control" 
+                                   value="100" min="1" max="1000">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="course_id">
+                                <i class="fas fa-book"></i> Course
+                            </label>
+                            <select id="course_id" name="course_id" class="form-control">
+                                <option value="">Select Course (Optional)</option>
+                                {% for course in courses %}
+                                <option value="{{ course.id }}">{{ course.course_code }} - {{ course.course_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="teacher_id">
+                                <i class="fas fa-chalkboard-teacher"></i> Teacher
+                            </label>
+                            <select id="teacher_id" name="teacher_id" class="form-control">
+                                <option value="">Select Teacher (Optional)</option>
+                                {% for teacher in teachers %}
+                                <option value="{{ teacher.id }}">{{ teacher.name }} - {{ teacher.subject }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="schedule_id">
+                                <i class="fas fa-calendar-alt"></i> Academic Schedule
+                            </label>
+                            <select id="schedule_id" name="schedule_id" class="form-control">
+                                <option value="">Select Schedule (Optional)</option>
+                                {% for schedule in schedules %}
+                                <option value="{{ schedule.id }}">{{ schedule.schedule_name }} ({{ schedule.academic_year }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="due_date" class="required">
+                                <i class="fas fa-calendar-times"></i> Due Date
+                            </label>
+                            <input type="date" id="due_date" name="due_date" class="form-control" 
+                                   value="{{ current_date }}" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">
+                            <i class="fas fa-align-left"></i> Description
+                        </label>
+                        <textarea id="description" name="description" class="form-control" 
+                                  placeholder="Describe the assignment requirements, instructions, and expectations..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <i class="fas fa-file-upload"></i> Upload Assignment File (Optional)
+                        </label>
+                        <div class="file-upload" onclick="document.getElementById('assignment_file').click()">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <h3>Click to upload file</h3>
+                            <p>Supported formats: PDF, DOC, DOCX, TXT, PPT, PPTX, XLS, XLSX, JPG, JPEG, PNG, ZIP</p>
+                            <p>Max file size: 16MB</p>
+                            <div id="fileInfo" class="file-info"></div>
+                            <input type="file" id="assignment_file" name="assignment_file" class="file-input" 
+                                   accept=".pdf,.doc,.docx,.txt,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.zip" 
+                                   onchange="showFileInfo(this)">
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <p>
+                            <i class="fas fa-info-circle"></i> 
+                            You can change the assignment name and upload/change files later from the assignment edit page.
+                            Files are stored securely and can be downloaded by authorized users.
+                        </p>
+                    </div>
+
+                    <div class="form-actions" style="display: flex; gap: 15px; margin-top: 30px; padding-top: 25px; border-top: 2px solid #f3f4f6;">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Create Assignment
+                        </button>
+                        <a href="/assignments" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function showFileInfo(input) {
+            const fileInfo = document.getElementById('fileInfo');
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const fileSize = (file.size / 1024).toFixed(1); // Convert to KB
+                fileInfo.innerHTML = `
+                    <span class="file-selected">
+                        <i class="fas fa-check-circle"></i> File selected:
+                    </span>
+                    <div style="margin-top: 5px;">
+                        <strong>${file.name}</strong><br>
+                        Size: ${fileSize} KB<br>
+                        Type: ${file.type || 'Unknown'}
+                    </div>
+                `;
+            } else {
+                fileInfo.innerHTML = '';
+            }
+        }
+        
+        // Set minimum date to today
+        document.getElementById('due_date').min = new Date().toISOString().split('T')[0];
+    </script>
+</body>
+</html>

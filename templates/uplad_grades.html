@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload Grades</title>
+</head>
+<body>
+    <h1>Upload Grades File</h1>
+    
+    <form id="uploadForm" enctype="multipart/form-data">
+        <div>
+            <label for="grade_file">Select grades file:</label>
+            <input type="file" id="grade_file" name="grade_file" accept=".csv,.xlsx,.xls,.txt,.pdf">
+        </div>
+        
+        <!-- Optional: Additional metadata fields -->
+        <div>
+            <label for="course_id">Course ID:</label>
+            <input type="text" id="course_id" name="course_id">
+        </div>
+        
+        <div>
+            <label for="semester">Semester:</label>
+            <input type="text" id="semester" name="semester">
+        </div>
+        
+        <button type="button" onclick="uploadFile()">Upload</button>
+    </form>
+    
+    <div id="message"></div>
+    
+    <script>
+    async function uploadFile() {
+        const form = document.getElementById('uploadForm');
+        const formData = new FormData(form);
+        
+        try {
+            const response = await fetch('/upload_grades', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                document.getElementById('message').innerHTML = 
+                    `<p style="color: green;">Success: ${result.message}</p>`;
+            } else {
+                document.getElementById('message').innerHTML = 
+                    `<p style="color: red;">Error: ${result.error}</p>`;
+            }
+        } catch (error) {
+            document.getElementById('message').innerHTML = 
+                `<p style="color: red;">Upload failed: ${error.message}</p>`;
+        }
+    }
+    </script>
+</body>
+</html>

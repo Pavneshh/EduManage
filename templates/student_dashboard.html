@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - School Management System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-info span {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .logout-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #ff5252;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card h3 i {
+            color: #667eea;
+        }
+
+        .card-content {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .stat-card h4 {
+            color: #666;
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-change {
+            font-size: 14px;
+            color: #4CAF50;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+
+        .nav-btn {
+            flex: 1;
+            min-width: 200px;
+            background: white;
+            border: none;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .nav-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-3px);
+        }
+
+        .alert {
+            background: #ffebee;
+            border-left: 4px solid #ff6b6b;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            color: #d32f2f;
+        }
+
+        .alert.success {
+            background: #e8f5e9;
+            border-left-color: #4CAF50;
+            color: #2e7d32;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: rgba(255,255,255,0.8);
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .user-info {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .nav-btn {
+                min-width: 100%;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <div class="header">
+            <h1><i class="fas fa-graduation-cap"></i> Student Dashboard</h1>
+            <div class="user-info">
+                <span>Welcome, <strong>{{ full_name }}</strong>!</span>
+                <span>Username: {{ username }}</span>
+                <a href="/logout" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert {% if category == 'success' %}success{% endif %}">
+                        <i class="fas fa-{% if category == 'success' %}check-circle{% else %}exclamation-circle{% endif %}"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Stats Overview -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h4>Current Courses</h4>
+                <div class="stat-number">4</div>
+                <div class="stat-change">+1 this semester</div>
+            </div>
+            <div class="stat-card">
+                <h4>Assignments Due</h4>
+                <div class="stat-number">3</div>
+                <div class="stat-change">Next: Tomorrow</div>
+            </div>
+            <div class="stat-card">
+                <h4>Attendance</h4>
+                <div class="stat-number">94%</div>
+                <div class="stat-change">Excellent <i class="fas fa-thumbs-up"></i></div>
+            </div>
+            <div class="stat-card">
+                <h4>GPA</h4>
+                <div class="stat-number">3.8</div>
+                <div class="stat-change">+0.2 this term</div>
+            </div>
+        </div>
+
+        <!-- Dashboard Cards -->
+        <div class="dashboard-grid">
+            <div class="card">
+                <h3><i class="fas fa-calendar-alt"></i> Today's Schedule</h3>
+                <div class="card-content">
+                    <p><strong>08:00 - 09:30</strong> Mathematics (Room 101)</p>
+                    <p><strong>09:45 - 11:15</strong> Computer Science (Lab 3)</p>
+                    <p><strong>11:30 - 13:00</strong> Physics (Room 205)</p>
+                    <p><strong>13:30 - 15:00</strong> English (Room 102)</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3><i class="fas fa-tasks"></i> Upcoming Assignments</h3>
+                <div class="card-content">
+                    <p><span class="badge">Due Tomorrow</span> Math Homework - Chapter 5</p>
+                    <p><span class="badge">Due in 3 days</span> CS Project - Database Design</p>
+                    <p><span class="badge">Due next week</span> Physics Lab Report</p>
+                    <p><span class="badge">Completed</span> English Essay ✓</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3><i class="fas fa-bullhorn"></i> Announcements</h3>
+                <div class="card-content">
+                    <p><strong>Important:</strong> Mid-term exams start next week</p>
+                    <p><strong>Reminder:</strong> Submit scholarship forms by Friday</p>
+                    <p><strong>Event:</strong> Career fair on October 25th</p>
+                    <p><strong>Library:</strong> Extended hours during exams</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3><i class="fas fa-chart-line"></i> Academic Performance</h3>
+                <div class="card-content">
+                    <p>Mathematics: A (95%) <progress value="95" max="100"></progress></p>
+                    <p>Computer Science: A (92%) <progress value="92" max="100"></progress></p>
+                    <p>Physics: B+ (88%) <progress value="88" max="100"></progress></p>
+                    <p>English: A- (90%) <progress value="90" max="100"></progress></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="nav-buttons">
+            <button class="nav-btn" onclick="window.location.href='/assignments'">
+                <i class="fas fa-file-alt"></i> View Assignments
+            </button>
+            <button class="nav-btn" onclick="window.location.href='#'">
+                <i class="fas fa-book"></i> My Courses
+            </button>
+            <button class="nav-btn" onclick="window.location.href='#'">
+                <i class="fas fa-chart-bar"></i> Grades & Reports
+            </button>
+            <button class="nav-btn" onclick="window.location.href='#'">
+                <i class="fas fa-user-edit"></i> Update Profile
+            </button>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>School Management System • Student Portal • {{ current_year }}</p>
+            <p>Need help? Contact student support at support@school.edu</p>
+        </div>
+    </div>
+
+    <script>
+        // Add current year to footer
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentYear = new Date().getFullYear();
+            const yearElements = document.querySelectorAll('.current_year');
+            yearElements.forEach(el => {
+                el.textContent = currentYear;
+            });
+            
+            // Add click handlers for cards
+            document.querySelectorAll('.card').forEach(card => {
+                card.style.cursor = 'pointer';
+                card.addEventListener('click', function() {
+                    const title = this.querySelector('h3').textContent;
+                    alert('You clicked on: ' + title);
+                });
+            });
+        });
+        
+        // Simple logout confirmation
+        document.querySelector('.logout-btn').addEventListener('click', function(e) {
+            if (!confirm('Are you sure you want to logout?')) {
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html>
