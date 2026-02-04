@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Profile | Customize Dashboard</title>
+    <link rel="stylesheet" href="/static/dashboard.css">
+</head>
+<body>
+    <!-- Same sidebar as dashboard -->
+    <nav class="sidebar">
+        <!-- Copy sidebar from dashboard.html -->
+    </nav>
+
+    <main class="main-content">
+        <header class="top-header">
+            <h1>Customize Your Admin Dashboard</h1>
+        </header>
+
+        <div class="content-card">
+            <div class="card-header">
+                <h2><i class="fas fa-user-cog"></i> Admin Profile Settings</h2>
+            </div>
+            
+            <form method="POST" action="/admin-profile" class="profile-form">
+                <div class="form-group">
+                    <label for="school_name">Institution/School Name</label>
+                    <input type="text" id="school_name" name="school_name" 
+                           value="{{ profile.school_name if profile else '' }}"
+                           placeholder="Enter your institution name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="admin_type">Admin Type</label>
+                    <select id="admin_type" name="admin_type">
+                        <option value="school_admin" 
+                                {% if profile and profile.admin_type == 'school_admin' %}selected{% endif %}>
+                            School Administrator
+                        </option>
+                        <option value="department_admin"
+                                {% if profile and profile.admin_type == 'department_admin' %}selected{% endif %}>
+                            Department Administrator
+                        </option>
+                        <option value="teacher_admin"
+                                {% if profile and profile.admin_type == 'teacher_admin' %}selected{% endif %}>
+                            Teacher Administrator
+                        </option>
+                        <option value="super_admin"
+                                {% if profile and profile.admin_type == 'super_admin' %}selected{% endif %}>
+                            Super Administrator
+                        </option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="department_name">Department Name (if applicable)</label>
+                    <input type="text" id="department_name" name="department_name" 
+                           value="{{ profile.department_name if profile else '' }}"
+                           placeholder="e.g., Computer Science Department">
+                </div>
+                
+                <div class="form-group">
+                    <label for="theme_color">Dashboard Theme Color</label>
+                    <input type="color" id="theme_color" name="theme_color" 
+                           value="{{ profile.theme_color if profile else '#3498db' }}">
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Profile
+                    </button>
+                    <a href="/dashboard" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Shared Access Management -->
+        <div class="content-card">
+            <div class="card-header">
+                <h2><i class="fas fa-share-alt"></i> Shared Access</h2>
+            </div>
+            <p>Configure which other administrators can view your data</p>
+            <!-- Add shared access management interface here -->
+        </div>
+    </main>
+</body>
+</html>

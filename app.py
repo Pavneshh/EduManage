@@ -964,92 +964,177 @@ def dashboard():
     current_date = datetime.now().strftime("%A, %B %d, %Y")
     
     # Get user info from session
+    user_id = session.get("user_id")
     username = session.get("username", "")
     email = session.get("email", "")
     name = session.get("name", username)
     user_type = session.get("user_type", "")
     
+    # Check if user has admin profile, create if not
     conn = None
     cursor = None
     try:
         conn = get_connection()
-        cursor = conn.cursor()
-
-        # Total students
-        cursor.execute("SELECT COUNT(*) FROM students")
-        total_students = cursor.fetchone()[0] or 0
-
-        # Active teachers
-        cursor.execute("SELECT COUNT(*) FROM teachers WHERE status='active'")
-        active_teachers = cursor.fetchone()[0] or 0
-
-        # Total courses
-        cursor.execute("SELECT COUNT(*) FROM courses")
-        total_courses = cursor.fetchone()[0] or 0
-
-        # Mock attendance for demo
-        attendance_rate = 94
-
-        # Get recent students (limit to 10)
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get or create admin profile
+        cursor.execute("""
+            SELECT * FROM admin_profiles WHERE user_id = %s
+        """, (user_id,))
+        admin_profile = cursor.fetchone()
+        
+        if not admin_profile and user_type == 'admin':
+            # Create default admin profile
+            cursor.execute("""
+                INSERT INTO admin_profiles (user_id, admin_type, school_name, custom_dashboard_settings)
+                VALUES (%s, 'school_admin', %s, '{}')
+            """, (user_id, f"{username}'s School"))
+            conn.commit()
+            admin_profile_id = cursor.lastrowid
+            
+            cursor.execute("SELECT * FROM admin_profiles WHERE id = %s", (admin_profile_id,))
+            admin_profile = cursor.fetchone()
+        
+        # ========== USER-SPECIFIC DATA FILTERING ==========
+        
+        # Total students - ONLY show user's students
+        cursor.execute("""
+            SELECT COUNT(*) as count FROM students 
+            WHERE created_by_user_id = %s 
+            OR JSON_CONTAINS(admin_access_ids, %s, '$')
+        """, (user_id, str(user_id)))
+        total_students_result = cursor.fetchone()
+        total_students = total_students_result['count'] if total_students_result else 0
+        
+        # Active teachers - ONLY show user's teachers
+        cursor.execute("""
+            SELECT COUNT(*) as count FROM teachers 
+            WHERE created_by_user_id = %s 
+            OR JSON_CONTAINS(admin_access_ids, %s, '$')
+            AND status='active'
+        """, (user_id, str(user_id)))
+        active_teachers_result = cursor.fetchone()
+        active_teachers = active_teachers_result['count'] if active_teachers_result else 0
+        
+        # Total courses - ONLY show user's courses
+        cursor.execute("""
+            SELECT COUNT(*) as count FROM courses 
+            WHERE created_by_user_id = %s 
+            OR JSON_CONTAINS(admin_access_ids, %s, '$')
+        """, (user_id, str(user_id)))
+        total_courses_result = cursor.fetchone()
+        total_courses = total_courses_result['count'] if total_courses_result else 0
+        
+        # Get recent students (ONLY user's students)
         cursor.execute("""
             SELECT s.id, s.name, s.email, s.course, s.phone, 
                    s.address, s.enrollment_year, s.created_at, 
-                   s.student_id, s.status
+                   s.student_id, s.status,
+                   u.username as created_by_username
             FROM students s 
+            LEFT JOIN users u ON s.created_by_user_id = u.id
+            WHERE s.created_by_user_id = %s 
+               OR JSON_CONTAINS(s.admin_access_ids, %s, '$')
             ORDER BY s.created_at DESC 
             LIMIT 10
-        """)
+        """, (user_id, str(user_id)))
         recent_students = cursor.fetchall()
-
-        # Get recent active teachers
+        
+        # Get recent teachers (ONLY user's teachers)
         cursor.execute("""
-            SELECT id, name, email, subject, phone, 
-                   qualification, status, created_at
-            FROM teachers 
-            WHERE status='active'
-            ORDER BY created_at DESC 
+            SELECT t.id, t.name, t.email, t.subject, t.phone, 
+                   t.qualification, t.status, t.created_at,
+                   u.username as created_by_username
+            FROM teachers t 
+            LEFT JOIN users u ON t.created_by_user_id = u.id
+            WHERE t.created_by_user_id = %s 
+               OR JSON_CONTAINS(t.admin_access_ids, %s, '$')
+            AND t.status='active'
+            ORDER BY t.created_at DESC 
             LIMIT 10
-        """)
+        """, (user_id, str(user_id)))
         recent_teachers = cursor.fetchall()
-
-        # Get upcoming assignments (if assignments table exists)
+        
+        # ========== NEW FEATURES FROM SECOND FUNCTION ==========
+        
+        # Get upcoming assignments (user-specific if assignments table exists)
         upcoming_assignments = []
         try:
             cursor.execute("""
-                SELECT assignment_name, due_date, course_id 
-                FROM assignments 
-                WHERE due_date >= CURDATE() 
-                AND status = 'active'
-                ORDER BY due_date ASC 
+                SELECT a.assignment_name, a.due_date, a.course_id, c.course_name,
+                       u.username as created_by_username
+                FROM assignments a
+                LEFT JOIN courses c ON a.course_id = c.id
+                LEFT JOIN users u ON a.created_by_user_id = u.id
+                WHERE (a.created_by_user_id = %s 
+                       OR JSON_CONTAINS(a.admin_access_ids, %s, '$'))
+                AND a.due_date >= CURDATE() 
+                AND a.status = 'active'
+                ORDER BY a.due_date ASC 
                 LIMIT 5
-            """)
+            """, (user_id, str(user_id)))
             upcoming_assignments = cursor.fetchall()
-        except:
-            pass  # Assignments table might not exist yet
-
-        # Get active schedules count
+        except Exception as e:
+            logger.debug(f"Assignments table might not exist or error: {str(e)}")
+            # Assignments table might not exist yet
+        
+        # Get active schedules count (user-specific)
         active_schedules = 0
         try:
-            cursor.execute("SELECT COUNT(*) FROM schedules WHERE status='active'")
-            active_schedules = cursor.fetchone()[0] or 0
-        except:
-            pass
-
+            cursor.execute("""
+                SELECT COUNT(*) as count FROM schedules 
+                WHERE (created_by_user_id = %s 
+                       OR JSON_CONTAINS(admin_access_ids, %s, '$'))
+                AND status='active'
+            """, (user_id, str(user_id)))
+            active_schedules_result = cursor.fetchone()
+            active_schedules = active_schedules_result['count'] if active_schedules_result else 0
+        except Exception as e:
+            logger.debug(f"Schedules table might not exist or error: {str(e)}")
+            # Schedules table might not exist yet
+        
+        # Get admin profile data for dashboard customization
+        cursor.execute("""
+            SELECT ap.*, u.username, u.email as user_email
+            FROM admin_profiles ap
+            JOIN users u ON ap.user_id = u.id
+            WHERE ap.user_id = %s
+        """, (user_id,))
+        admin_profile_data = cursor.fetchone()
+        
+        # If no admin profile but user is admin, create one
+        if not admin_profile_data and user_type == 'admin':
+            cursor.execute("""
+                INSERT INTO admin_profiles 
+                (user_id, admin_type, school_name, custom_dashboard_settings)
+                VALUES (%s, 'school_admin', %s, '{"theme": "blue", "widgets": ["stats", "quick_actions", "recent_students"]}')
+            """, (user_id, f"{username}'s Institution"))
+            conn.commit()
+            
+            cursor.execute("SELECT * FROM admin_profiles WHERE user_id = %s", (user_id,))
+            admin_profile_data = cursor.fetchone()
+        
+        # Mock attendance for demo (user-specific in real implementation)
+        attendance_rate = 94
+        
         return render_template(
             "dashboard.html",
             username=username,
             user_email=email,
             user_name=name,
             user_type=user_type,
+            user_id=user_id,
             current_date=current_date,
             total_students=total_students,
             active_teachers=active_teachers,
             total_courses=total_courses,
-            active_schedules=active_schedules,
+            active_schedules=active_schedules,  # NEW
             attendance_rate=attendance_rate,
             recent_students=recent_students,
             recent_teachers=recent_teachers,
-            upcoming_assignments=upcoming_assignments
+            upcoming_assignments=upcoming_assignments,  # NEW
+            admin_profile=admin_profile_data,
+            is_super_admin=user_type == 'super_admin'
         )
         
     except Exception as e:
@@ -1065,17 +1150,118 @@ def dashboard():
             total_students=0,
             active_teachers=0,
             total_courses=0,
-            active_schedules=0,
+            active_schedules=0,  # NEW
             attendance_rate=0,
             recent_students=[],
             recent_teachers=[],
-            upcoming_assignments=[]
+            upcoming_assignments=[],  # NEW
+            admin_profile=None
         )
     finally:
         if cursor:
             cursor.close()
         if conn:
             conn.close()
+
+@app.route("/admin-profile", methods=["GET", "POST"])
+@login_required
+def admin_profile():
+    user_id = session.get("user_id")
+    
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        if request.method == "POST":
+            school_name = validate_input(request.form.get("school_name", ""))
+            admin_type = request.form.get("admin_type", "school_admin")
+            department_name = validate_input(request.form.get("department_name", ""))
+            theme_color = request.form.get("theme_color", "#3498db")
+            
+            # Update or insert admin profile
+            cursor.execute("""
+                INSERT INTO admin_profiles 
+                (user_id, admin_type, school_name, department_name, theme_color)
+                VALUES (%s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE
+                admin_type = VALUES(admin_type),
+                school_name = VALUES(school_name),
+                department_name = VALUES(department_name),
+                theme_color = VALUES(theme_color)
+            """, (user_id, admin_type, school_name, department_name, theme_color))
+            
+            conn.commit()
+            flash("Admin profile updated successfully!", "success")
+            return redirect("/dashboard")
+        
+        # GET request - load existing profile
+        cursor.execute("""
+            SELECT * FROM admin_profiles WHERE user_id = %s
+        """, (user_id,))
+        profile = cursor.fetchone()
+        
+        return render_template("admin_profile.html",
+                             username=session["username"],
+                             profile=profile)
+                             
+    except Exception as e:
+        logger.error(f"Error managing admin profile: {str(e)}")
+        flash("Error loading profile", "error")
+        return redirect("/dashboard")
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+@app.route("/share-data/<data_type>/<int:data_id>", methods=["POST"])
+@login_required
+def share_data(data_type, data_id):
+    """Share specific data item with other admins"""
+    user_id = session.get("user_id")
+    
+    if request.method == "POST":
+        shared_with = request.form.getlist("shared_admins[]")
+        
+        conn = None
+        cursor = None
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+            
+            # Update the data item with shared access list
+            table_map = {
+                'student': 'students',
+                'teacher': 'teachers',
+                'course': 'courses'
+            }
+            
+            if data_type in table_map:
+                table = table_map[data_type]
+                # Convert list to JSON string
+                shared_json = json.dumps(shared_with) if shared_with else '[]'
+                
+                cursor.execute(f"""
+                    UPDATE {table} 
+                    SET admin_access_ids = %s 
+                    WHERE id = %s AND created_by_user_id = %s
+                """, (shared_json, data_id, user_id))
+                
+                conn.commit()
+                flash(f"{data_type.title()} shared successfully!", "success")
+            
+        except Exception as e:
+            logger.error(f"Error sharing data: {str(e)}")
+            flash("Error sharing data", "error")
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+    
+    return redirect(request.referrer or "/dashboard")
 
 # ================= STUDENT MANAGEMENT =================
 
@@ -1111,13 +1297,19 @@ def students():
 @app.route("/add-student", methods=["GET", "POST"])
 @login_required
 def add_student():
+    # Get user info
+    user_id = session.get("user_id")
+    username = session.get("username", "")
+    
     # Prepare template data for GET request
     template_data = {
-        'username': session["username"],
+        'username': username,
         'form_data': None,
         'enrollment_years': get_enrollment_years(),
         'current_year': datetime.now().year,
-        'max_date': get_max_birth_date().isoformat()
+        'max_date': get_max_birth_date().isoformat(),
+        'user_type': session.get("user_type", ""),
+        'user_id': user_id
     }
         
     if request.method == "POST":
@@ -1170,9 +1362,16 @@ def add_student():
         cursor = None
         try:
             conn = get_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(dictionary=True)  # Use dictionary cursor
             
-            cursor.execute("SELECT id FROM students WHERE email = %s", (form_data['email'],))
+            # Check if email already exists (including admin_access filtering)
+            cursor.execute("""
+                SELECT id FROM students 
+                WHERE email = %s 
+                AND (created_by_user_id = %s 
+                     OR JSON_CONTAINS(admin_access_ids, %s, '$'))
+            """, (form_data['email'], user_id, str(user_id)))
+            
             if cursor.fetchone():
                 flash("Email already exists. Please use a different email.", "error")
                 return render_template("add_student.html", **template_data)
@@ -1180,11 +1379,20 @@ def add_student():
             # Generate student ID
             student_id = generate_student_id(form_data['course'], form_data['enrollment_year'])
             
-            # Insert student into database
+            # ====== UPDATED: Insert student with created_by_user_id ======
             query = """INSERT INTO students 
                        (name, email, course, phone, birth_date, enrollment_year, 
-                        address, guardian_name, student_id, status) 
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'active')"""
+                        address, guardian_name, student_id, status, created_by_user_id, admin_access_ids) 
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'active', %s, %s)"""
+            
+            # Check if user is admin to set admin_access_ids
+            user_type = session.get("user_type", "")
+            if user_type in ['admin', 'super_admin']:
+                # For admin users, add themselves to admin_access_ids
+                admin_access_ids = json.dumps([user_id])
+            else:
+                # For regular users, they are the only admin
+                admin_access_ids = json.dumps([])  # Empty array, only creator has access
             
             cursor.execute(query, (
                 form_data['name'],
@@ -1195,9 +1403,33 @@ def add_student():
                 form_data['enrollment_year'],
                 form_data['address'],
                 form_data['guardian_name'],
-                student_id
+                student_id,
+                user_id,  # Add user_id here
+                admin_access_ids  # Add admin_access_ids
             ))
             conn.commit()
+            
+            # Get the ID of the newly created student
+            new_student_id = cursor.lastrowid
+            
+            # ====== NEW: Log the action for admin tracking ======
+            try:
+                cursor.execute("""
+                    INSERT INTO admin_activity_logs 
+                    (user_id, action_type, target_type, target_id, description, ip_address)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (
+                    user_id,
+                    'create',
+                    'student',
+                    new_student_id,
+                    f"Added student: {form_data['name']} ({student_id})",
+                    request.remote_addr
+                ))
+                conn.commit()
+            except Exception as log_error:
+                logger.error(f"Error logging admin activity: {str(log_error)}")
+                # Don't fail the main operation if logging fails
             
             flash(f'Student {form_data["name"]} added successfully! Student ID: {student_id}', 'success')
             return redirect("/students")

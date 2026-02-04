@@ -352,6 +352,11 @@
             opacity: 0.9;
         }
         
+        /* CSRF Token Field Style */
+        .csrf-field {
+            display: none;
+        }
+        
         @media (max-width: 1024px) {
             .sidebar {
                 width: 80px;
@@ -487,6 +492,9 @@
                 </div>
 
                 <form method="POST" action="/add-student">
+                    <!-- CSRF Token Field (CRITICAL) -->
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
                     <div class="form-row">
                         <div class="form-group">
                             <label for="name" class="required">

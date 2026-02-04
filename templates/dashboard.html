@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard | Student Management System</title>
+    <title>{% if admin_profile and admin_profile.school_name %}{{ admin_profile.school_name }} | {% else %}Dashboard | {% endif %}Student Management System</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
@@ -24,7 +24,28 @@
                 </div>
                 <div class="user-details">
                     <h3>{{ username }}</h3>
-                    <p>Administrator</p>
+                    <p>
+                        {% if admin_profile %}
+                            {{ admin_profile.admin_type|replace('_', ' ')|title }} 
+                            {% if admin_profile.school_name %}
+                                - {{ admin_profile.school_name }}
+                            {% endif %}
+                        {% else %}
+                            {% if user_type == 'super_admin' %}
+                                Super Administrator
+                            {% elif user_type == 'admin' %}
+                                Administrator
+                            {% else %}
+                                User
+                            {% endif %}
+                        {% endif %}
+                    </p>
+                    {% if admin_profile and admin_profile.department_name %}
+                        <p class="user-department">
+                            <i class="fas fa-building"></i>
+                            {{ admin_profile.department_name }}
+                        </p>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -64,9 +85,20 @@
                 <a href="/schedules">
                     <i class="fas fa-calendar-alt"></i>
                     <span>Schedule</span>
+                    {% if active_schedules and active_schedules > 0 %}
+                        <span class="badge">{{ active_schedules }}</span>
+                    {% endif %}
                 </a>
             </li>
-            <li class="menu-item"><a href="/assignments"><i class="fas fa-tasks"></i><span>Assignments</span></a></li>
+            <li class="menu-item">
+                <a href="/assignments">
+                    <i class="fas fa-tasks"></i>
+                    <span>Assignments</span>
+                    {% if upcoming_assignments and upcoming_assignments|length > 0 %}
+                        <span class="badge">{{ upcoming_assignments|length }}</span>
+                    {% endif %}
+                </a>
+            </li>
             <li class="menu-item">
                 <a href="#">
                     <i class="fas fa-chart-bar"></i>
@@ -74,14 +106,26 @@
                 </a>
             </li>
             <li class="menu-item">
-                <a href="#">
+                <a href="/admin-profile">
                     <i class="fas fa-cog"></i>
                     <span>Settings</span>
                 </a>
             </li>
+            {% if user_type == 'super_admin' %}
+            <li class="menu-item">
+                <a href="/admin/users">
+                    <i class="fas fa-user-shield"></i>
+                    <span>Admin Management</span>
+                </a>
+            </li>
+            {% endif %}
         </ul>
         
         <div class="sidebar-footer">
+            <div class="system-status">
+                <i class="fas fa-circle status-online"></i>
+                <span>System Online</span>
+            </div>
             <a href="/logout" class="logout-btn">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>
@@ -94,36 +138,60 @@
         <!-- Top Header -->
         <header class="top-header">
             <div class="header-left">
-                <h1>Student Management System</h1>
+                {% if admin_profile and admin_profile.school_name %}
+                    <h1>{{ admin_profile.school_name }} Dashboard</h1>
+                {% else %}
+                    <h1>Student Management System</h1>
+                {% endif %}
                 <p class="welcome-msg">Welcome back, <span class="highlight">{{ username }}</span>! 👋</p>
+                {% if admin_profile and admin_profile.department_name %}
+                    <p class="department-name">
+                        <i class="fas fa-building"></i>
+                        {{ admin_profile.department_name }}
+                    </p>
+                {% endif %}
                 <p class="date-display">
                     <i class="fas fa-calendar-day"></i>
                     <span>{{ current_date }}</span>
                 </p>
             </div>
             <div class="header-right">
+                {% if user_type in ['admin', 'super_admin'] %}
+                <a href="/admin-profile" class="profile-btn">
+                    <i class="fas fa-cog"></i>
+                    <span>Customize Dashboard</span>
+                </a>
+                {% endif %}
                 <div class="search-box">
                     <i class="fas fa-search"></i>
                     <input type="text" placeholder="Search students, courses...">
                 </div>
                 <div class="notification">
                     <i class="fas fa-bell"></i>
-                    <span class="notification-badge">3</span>
+                    {% if upcoming_assignments and upcoming_assignments|length > 0 %}
+                        <span class="notification-badge">{{ upcoming_assignments|length }}</span>
+                    {% endif %}
                 </div>
             </div>
         </header>
 
-                        <!-- Stats Cards -->
-                <section class="stats-section">
-                    <div class="stats-grid">
-                        <div class="stat-card">
+        <!-- Stats Cards -->
+        <section class="stats-section">
+            <div class="stats-grid">
+                <div class="stat-card">
                     <div class="stat-icon students">
                         <i class="fas fa-users"></i>
                     </div>
                     <div class="stat-info">
                         <h3>Total Students</h3>
                         <p class="stat-number">{{ total_students }}</p>
-                        <p class="stat-change positive">↑ Updated from database</p>
+                        <p class="stat-change positive">
+                            {% if total_students > 0 %}
+                                ↑ Your managed students
+                            {% else %}
+                                No students yet
+                            {% endif %}
+                        </p>
                     </div>
                 </div>
 
@@ -134,7 +202,13 @@
                     <div class="stat-info">
                         <h3>Active Teachers</h3>
                         <p class="stat-number">{{ active_teachers }}</p>
-                        <p class="stat-change positive">↑ Updated from database</p>
+                        <p class="stat-change positive">
+                            {% if active_teachers > 0 %}
+                                ↑ Your managed teachers
+                            {% else %}
+                                No teachers yet
+                            {% endif %}
+                        </p>
                     </div>
                 </div>
 
@@ -145,7 +219,13 @@
                     <div class="stat-info">
                         <h3>Courses</h3>
                         <p class="stat-number">{{ total_courses }}</p>
-                        <p class="stat-change">Updated from database</p>
+                        <p class="stat-change">
+                            {% if total_courses > 0 %}
+                                Your available courses
+                            {% else %}
+                                No courses yet
+                            {% endif %}
+                        </p>
                     </div>
                 </div>
 
@@ -155,134 +235,192 @@
                     </div>
                     <div class="stat-info">
                         <h3>Avg. Attendance</h3>
-                        <p class="stat-number">94%</p>
+                        <p class="stat-number">{{ attendance_rate }}%</p>
                         <p class="stat-change positive">↑ 2% from last week</p>
                     </div>
                 </div>
             </div>
         </section>
 
-            <!-- Quick Actions -->
-            <div class="content-card">
-                <div class="card-header">
-                    <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
-                </div>
-                <div class="quick-actions">
-                    <a href="/add-student" class="action-btn">
-                        <i class="fas fa-user-plus"></i>
-                        <span>Add New Student</span>
-                    </a>
-                    <a href="/add-teacher" class="action-btn">
-                        <i class="fas fa-user-plus"></i>
-                        <span>Add New Teachers</span>
-                    </a>
-                    <a href="#" class="action-btn">
-                        <i class="fas fa-file-import"></i>
-                        <span>Upload Grades</span>
-                    </a>
-                    <a href="#" class="action-btn">
-                        <i class="fas fa-calendar-plus"></i>
-                        <span>Create Event</span>
-                    </a>
-                    <a href="#" class="action-btn">
-                        <i class="fas fa-envelope"></i>
-                        <span>Send Announcement</span>
-                    </a>
-                    <a href="#" class="action-btn">
-                        <i class="fas fa-chart-pie"></i>
-                        <span>Generate Report</span>
-                    </a>
-                    <a href="/add-course" class="action-btn">
-                        <i class="fas fa-download"></i>
-                        <span>Add New Course</span>
-                    </a>
-                </div>
+        <!-- Quick Actions -->
+        <div class="content-card">
+            <div class="card-header">
+                <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
             </div>
+            <div class="quick-actions">
+                <a href="/add-student" class="action-btn">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Add New Student</span>
+                </a>
+                <a href="/add-teacher" class="action-btn">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Add New Teacher</span>
+                </a>
+                <a href="/add-course" class="action-btn">
+                    <i class="fas fa-book-medical"></i>
+                    <span>Add New Course</span>
+                </a>
+                <a href="/schedules/new" class="action-btn">
+                    <i class="fas fa-calendar-plus"></i>
+                    <span>Create Schedule</span>
+                </a>
+                <a href="/assignments/new" class="action-btn">
+                    <i class="fas fa-tasks"></i>
+                    <span>Create Assignment</span>
+                </a>
+                {% if user_type in ['admin', 'super_admin'] %}
+                <a href="/admin/profile" class="action-btn">
+                    <i class="fas fa-user-cog"></i>
+                    <span>Admin Profile</span>
+                </a>
+                {% endif %}
+                <a href="#" class="action-btn">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Generate Report</span>
+                </a>
+            </div>
+        </div>
 
-            <!-- Upcoming Events -->
-            <div class="content-card">
-                <div class="card-header">
-                    <h2><i class="fas fa-calendar-alt"></i> Upcoming Events</h2>
-                    <a href="#" class="view-all">View Calendar</a>
-                </div>
-                <div class="events-list">
-                    <div class="event-item">
-                        <div class="event-date">
-                            <span class="day">15</span>
-                            <span class="month">NOV</span>
-                        </div>
-                        <div class="event-details">
-                            <h4>Parent-Teacher Meeting</h4>
-                            <p><i class="far fa-clock"></i> 2:00 PM - 5:00 PM</p>
-                        </div>
-                    </div>
-                    <div class="event-item">
-                        <div class="event-date">
-                            <span class="day">18</span>
-                            <span class="month">NOV</span>
-                        </div>
-                        <div class="event-details">
-                            <h4>Science Fair</h4>
-                            <p><i class="far fa-clock"></i> 9:00 AM - 3:00 PM</p>
-                        </div>
-                    </div>
-                    <div class="event-item">
-                        <div class="event-date">
-                            <span class="day">22</span>
-                            <span class="month">NOV</span>
-                        </div>
-                        <div class="event-details">
-                            <h4>Mid-Term Exams Begin</h4>
-                            <p><i class="far fa-clock"></i> All Day</p>
-                        </div>
-                    </div>
-                    <div class="event-item">
-                        <div class="event-date">
-                            <span class="day">25</span>
-                            <span class="month">NOV</span>
-                        </div>
-                        <div class="event-details">
-                            <h4>Sports Day</h4>
-                            <p><i class="far fa-clock"></i> 8:00 AM - 4:00 PM</p>
-                        </div>
-                    </div>
-                </div>
+        <!-- Recent Students -->
+        <div class="content-card">
+            <div class="card-header">
+                <h2><i class="fas fa-user-graduate"></i> Recent Students</h2>
+                <a href="/students" class="view-all">View All</a>
             </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Name</th>
+                            <th>Course</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th>Added By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if recent_students and recent_students|length > 0 %}
+                            {% for student in recent_students %}
+                            <tr>
+                                <td>{{ student.student_id }}</td>
+                                <td>{{ student.name }}</td>
+                                <td>{{ student.course }}</td>
+                                <td>{{ student.email }}</td>
+                                <td>
+                                    <span class="status-badge status-{{ student.status }}">
+                                        {{ student.status|title }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if student.created_by_username %}
+                                        {{ student.created_by_username }}
+                                    {% else %}
+                                        {{ username }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="no-data">
+                                    <i class="fas fa-user-slash"></i>
+                                    No students found. <a href="/add-student">Add your first student</a>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-            <!-- Attendance Chart -->
-            <div class="content-card full-width">
-                <div class="card-header">
-                    <h2><i class="fas fa-chart-line"></i> Attendance Overview</h2>
-                    <div class="time-filter">
-                        <button class="filter-btn active">Weekly</button>
-                        <button class="filter-btn">Monthly</button>
-                        <button class="filter-btn">Yearly</button>
-                    </div>
-                </div>
-                <div class="attendance-chart">
-                    <div class="chart-bars">
-                        <div class="bar" style="height: 80%;"><span>80%</span></div>
-                        <div class="bar" style="height: 92%;"><span>92%</span></div>
-                        <div class="bar" style="height: 85%;"><span>85%</span></div>
-                        <div class="bar" style="height: 95%;"><span>95%</span></div>
-                        <div class="bar" style="height: 88%;"><span>88%</span></div>
-                        <div class="bar" style="height: 70%;"><span>70%</span></div>
-                    </div>
-                    <div class="chart-labels">
-                        <span>Mon</span>
-                        <span>Tue</span>
-                        <span>Wed</span>
-                        <span>Thu</span>
-                        <span>Fri</span>
-                        <span>Sat</span>
-                    </div>
-                </div>
+        <!-- Recent Teachers -->
+        <div class="content-card">
+            <div class="card-header">
+                <h2><i class="fas fa-chalkboard-teacher"></i> Recent Teachers</h2>
+                <a href="/teachers" class="view-all">View All</a>
             </div>
-        </section>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Subject</th>
+                            <th>Email</th>
+                            <th>Qualification</th>
+                            <th>Status</th>
+                            <th>Added By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if recent_teachers and recent_teachers|length > 0 %}
+                            {% for teacher in recent_teachers %}
+                            <tr>
+                                <td>{{ teacher.name }}</td>
+                                <td>{{ teacher.subject }}</td>
+                                <td>{{ teacher.email }}</td>
+                                <td>{{ teacher.qualification }}</td>
+                                <td>
+                                    <span class="status-badge status-{{ teacher.status }}">
+                                        {{ teacher.status|title }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if teacher.created_by_username %}
+                                        {{ teacher.created_by_username }}
+                                    {% else %}
+                                        {{ username }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="no-data">
+                                    <i class="fas fa-user-slash"></i>
+                                    No teachers found. <a href="/add-teacher">Add your first teacher</a>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Upcoming Assignments -->
+        {% if upcoming_assignments and upcoming_assignments|length > 0 %}
+        <div class="content-card">
+            <div class="card-header">
+                <h2><i class="fas fa-tasks"></i> Upcoming Assignments</h2>
+                <a href="/assignments" class="view-all">View All</a>
+            </div>
+            <div class="assignments-list">
+                {% for assignment in upcoming_assignments %}
+                <div class="assignment-item">
+                    <div class="assignment-info">
+                        <h4>{{ assignment.assignment_name }}</h4>
+                        <p class="assignment-course">
+                            <i class="fas fa-book"></i>
+                            {{ assignment.course_name or 'General' }}
+                        </p>
+                        <p class="assignment-due">
+                            <i class="far fa-clock"></i>
+                            Due: {{ assignment.due_date.strftime('%B %d, %Y') }}
+                        </p>
+                    </div>
+                    <div class="assignment-creator">
+                        <i class="fas fa-user"></i>
+                        {{ assignment.created_by_username or username }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
 
         <!-- Footer -->
         <footer class="dashboard-footer">
-            <p>© 2023 Student Management System | <span>EduManage v2.1</span></p>
+            <p>© 2023 {% if admin_profile and admin_profile.school_name %}{{ admin_profile.school_name }} | {% endif %}<span>EduManage v2.1</span></p>
             <div class="footer-links">
                 <a href="#">Help Center</a>
                 <a href="#">Privacy Policy</a>
