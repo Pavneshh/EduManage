@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register | Student Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6C63FF;
+            --primary-dark: #5A52D3;
+            --secondary: #FF6584;
+            --dark: #2D2B55;
+            --light: #F8F9FA;
+            --gray: #8C8CA1;
+            --success: #4CAF50;
+            --error: #F44336;
+            --warning: #FF9800;
+            --shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1d2671 0%, #c33764 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: var(--dark);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 550px;
+        }
+
+        .register-header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .register-header h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .register-header p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 16px;
+        }
+
+        .form-box {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: var(--shadow);
+            animation: slideUp 0.6s ease-out;
+            margin-bottom: 20px;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert {
+            background: #FFEBEE;
+            color: var(--error);
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            border-left: 4px solid var(--error);
+        }
+
+        .alert-success {
+            background: #E8F5E9;
+            color: var(--success);
+            border-left-color: var(--success);
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--dark);
+            font-size: 14px;
+        }
+
+        .form-group input, 
+        .form-group select {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #E8E8E8;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: 'Poppins', sans-serif;
+            transition: var(--transition);
+            background-color: #F9F9F9;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            background-color: white;
+            box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.1);
+        }
+
+        .role-option {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .role-card {
+            flex: 1;
+            min-width: 120px;
+            padding: 20px 15px;
+            border: 2px solid #E8E8E8;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+        }
+
+        .role-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .role-card.selected {
+            border-color: var(--primary);
+            background-color: rgba(108, 99, 255, 0.05);
+        }
+
+        .role-icon {
+            font-size: 24px;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .role-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .role-desc {
+            font-size: 11px;
+            color: var(--gray);
+            line-height: 1.3;
+        }
+
+        .special-fields {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .special-fields.show {
+            display: block;
+        }
+
+        .input-help {
+            font-size: 12px;
+            color: var(--gray);
+            margin-top: 5px;
+            display: block;
+        }
+
+        .btn-register {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 10px;
+        }
+
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(108, 99, 255, 0.3);
+        }
+
+        .login-link {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #E8E8E8;
+            margin-top: 20px;
+        }
+
+        .login-link p {
+            color: var(--gray);
+            font-size: 15px;
+        }
+
+        .login-link a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        .admin-note {
+            background-color: #f0f8ff;
+            border-left: 4px solid #2196F3;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 13px;
+        }
+
+        @media (max-width: 480px) {
+            .form-box {
+                padding: 30px 25px;
+            }
+            
+            .register-header h1 {
+                font-size: 28px;
+            }
+            
+            .role-option {
+                flex-direction: column;
+            }
+            
+            .role-card {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="register-header">
+            <h1>Create Account</h1>
+            <p>Select your role to continue</p>
+        </div>
+        
+        <div class="form-box">
+            <form method="POST" class="register-form" id="registerForm">
+                <!-- CSRF Token -->
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                <!-- Role Selection -->
+                <div class="role-option">
+                    <div class="role-card" data-role="student">
+                        <div class="role-icon">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
+                        <div class="role-name">Student</div>
+                        <div class="role-desc">Join as a learner</div>
+                    </div>
+                    
+                    <div class="role-card" data-role="teacher">
+                        <div class="role-icon">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                        <div class="role-name">Teacher</div>
+                        <div class="role-desc">Join as an educator</div>
+                    </div>
+                    
+                    <div class="role-card" data-role="admin">
+                        <div class="role-icon">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <div class="role-name">Administrator</div>
+                        <div class="role-desc">System administration</div>
+                    </div>
+                </div>
+                
+                <!-- Hidden Role Input -->
+                <input type="hidden" name="role" id="roleInput" value="" required>
+                
+                <!-- Common Fields -->
+                <div class="form-group">
+                    <label for="full_name">Full Name</label>
+                    <input type="text" id="full_name" name="full_name" 
+                           placeholder="Enter your full name" required
+                           maxlength="100">
+                </div>
+                
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" 
+                           placeholder="Choose a username" required
+                           maxlength="50" pattern="[A-Za-z0-9_]{3,50}">
+                    <span class="input-help">3-50 characters (letters, numbers, underscores)</span>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" 
+                           placeholder="you@example.com" required
+                           maxlength="100">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" 
+                           placeholder="Create a strong password" required
+                           minlength="8">
+                    <span class="input-help">Minimum 8 characters with letters and numbers</span>
+                </div>
+                
+                <!-- Special Fields (Initially Hidden) -->
+                <div class="special-fields" id="specialFields">
+                    <!-- Teacher Fields -->
+                    <div id="teacherFields" style="display: none;">
+                        <div class="form-group">
+                            <label for="courses">Subjects/Courses</label>
+                            <input type="text" id="courses" name="courses" 
+                                   placeholder="e.g., Mathematics, Physics, Computer Science"
+                                   maxlength="200">
+                            <span class="input-help">Comma-separated list of subjects you teach</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="teacher_code">Teacher Registration Code</label>
+                            <input type="text" id="teacher_code" name="admin_code" 
+                                   placeholder="Enter 'TEACHER' to register"
+                                   maxlength="20">
+                            <span class="input-help">Enter <strong>TEACHER</strong> (all caps) to register as teacher</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Admin Fields -->
+                    <div id="adminFields" style="display: none;">
+                        <div class="form-group">
+                            <label for="admin_reg_code">Administrator Registration Code</label>
+                            <input type="password" id="admin_reg_code" name="admin_code" 
+                                   placeholder="Enter admin invitation code"
+                                   maxlength="50">
+                            <span class="input-help">Requires special admin invitation code</span>
+                        </div>
+                        
+                        <div class="admin-note">
+                            <strong><i class="fas fa-info-circle"></i> Note:</strong> 
+                            <p>• Admin accounts require special invitation codes</p>
+                            <p>• If you don't have an invitation code, please contact existing administrator</p>
+                            <p>• First admin can be created at <a href="/create-admin">/create-admin</a></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-register" id="registerBtn">
+                    Create Account
+                </button>
+                
+                <div class="login-link">
+                    <p>Already have an account? <a href="/login">Login Here</a></p>
+                    <p style="margin-top: 10px; font-size: 14px;">
+                        <a href="/create-admin" style="color: #FF9800;">
+                            <i class="fas fa-user-shield"></i> Create First Admin Account
+                        </a>
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const roleCards = document.querySelectorAll('.role-card');
+            const roleInput = document.getElementById('roleInput');
+            const specialFields = document.getElementById('specialFields');
+            const teacherFields = document.getElementById('teacherFields');
+            const adminFields = document.getElementById('adminFields');
+            const form = document.getElementById('registerForm');
+            
+            // Role selection
+            roleCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    // Remove selected class from all cards
+                    roleCards.forEach(c => c.classList.remove('selected'));
+                    
+                    // Add selected class to clicked card
+                    this.classList.add('selected');
+                    
+                    // Set role value
+                    const role = this.dataset.role;
+                    roleInput.value = role;
+                    
+                    // Show/hide special fields
+                    if (role === 'teacher' || role === 'admin') {
+                        specialFields.classList.add('show');
+                        
+                        // Show specific fields based on role
+                        if (role === 'teacher') {
+                            teacherFields.style.display = 'block';
+                            adminFields.style.display = 'none';
+                            // Make teacher fields required
+                            document.getElementById('courses').setAttribute('required', '');
+                            document.getElementById('teacher_code').setAttribute('required', '');
+                            document.getElementById('admin_reg_code').removeAttribute('required');
+                        } else if (role === 'admin') {
+                            teacherFields.style.display = 'none';
+                            adminFields.style.display = 'block';
+                            // Make admin field required
+                            document.getElementById('admin_reg_code').setAttribute('required', '');
+                            document.getElementById('courses').removeAttribute('required');
+                            document.getElementById('teacher_code').removeAttribute('required');
+                        }
+                    } else {
+                        // Student - hide all special fields
+                        specialFields.classList.remove('show');
+                        teacherFields.style.display = 'none';
+                        adminFields.style.display = 'none';
+                        // Remove required from all special fields
+                        document.getElementById('courses').removeAttribute('required');
+                        document.getElementById('teacher_code').removeAttribute('required');
+                        document.getElementById('admin_reg_code').removeAttribute('required');
+                    }
+                });
+            });
+            
+            // Form validation
+            form.addEventListener('submit', function(e) {
+                if (!roleInput.value) {
+                    e.preventDefault();
+                    alert('Please select a role (Student, Teacher, or Administrator)');
+                    return;
+                }
+                
+                // Validate password
+                const password = document.getElementById('password').value;
+                if (password.length < 8) {
+                    e.preventDefault();
+                    alert('Password must be at least 8 characters long');
+                    return;
+                }
+                
+                // Check for letters and numbers
+                if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+                    e.preventDefault();
+                    alert('Password must contain both letters and numbers');
+                    return;
+                }
+                
+                // Role-specific validations
+                const role = roleInput.value;
+                if (role === 'teacher') {
+                    const teacherCode = document.getElementById('teacher_code').value;
+                    if (teacherCode.toUpperCase() !== 'TEACHER') {
+                        e.preventDefault();
+                        alert('Teacher registration requires code: TEACHER (all caps)');
+                        return;
+                    }
+                }
+                
+                if (role === 'admin') {
+                    const adminCode = document.getElementById('admin_reg_code').value;
+                    if (!adminCode) {
+                        e.preventDefault();
+                        alert('Admin registration requires an invitation code');
+                        return;
+                    }
+                }
+            });
+            
+            // Auto-select first role (student)
+            roleCards[0].click();
+        });
+    </script>
+</body>
+</html>

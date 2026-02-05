@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pending Teachers | Admin Portal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6C63FF;
+            --primary-dark: #5A52D3;
+            --warning: #FF9800;
+            --success: #4CAF50;
+            --light: #F8F9FA;
+            --dark: #2D2B55;
+            --gray: #8C8CA1;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            margin: 0;
+            padding: 20px;
+            color: var(--dark);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eaeaea;
+        }
+        
+        .header h1 {
+            color: var(--dark);
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .header h1 i {
+            color: var(--warning);
+        }
+        
+        .back-btn {
+            background: var(--primary);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+        
+        .back-btn:hover {
+            background: var(--primary-dark);
+        }
+        
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border-left: 4px solid var(--warning);
+        }
+        
+        .stat-card.approved {
+            border-left-color: var(--success);
+        }
+        
+        .stat-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: var(--gray);
+        }
+        
+        .stat-card .count {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--dark);
+        }
+        
+        .teachers-table {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        thead {
+            background: var(--primary);
+            color: white;
+        }
+        
+        th {
+            padding: 15px 20px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        tr:hover {
+            background: #f9f9ff;
+        }
+        
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .status-pending {
+            background: #FFF3CD;
+            color: #856404;
+        }
+        
+        .status-active {
+            background: #D4EDDA;
+            color: #155724;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .btn-approve {
+            background: var(--success);
+            color: white;
+        }
+        
+        .btn-approve:hover {
+            background: #3d8b40;
+        }
+        
+        .btn-view {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-view:hover {
+            background: var(--primary-dark);
+        }
+        
+        .btn-reject {
+            background: #F44336;
+            color: white;
+        }
+        
+        .btn-reject:hover {
+            background: #d32f2f;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--gray);
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: #e0e0e0;
+        }
+        
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: var(--dark);
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .alert-success {
+            background: #E8F5E9;
+            color: var(--success);
+            border-left: 4px solid var(--success);
+        }
+        
+        .alert-error {
+            background: #FFEBEE;
+            color: #F44336;
+            border-left: 4px solid #F44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-user-clock"></i> Pending Teacher Approvals</h1>
+            <a href="/dashboard" class="back-btn">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <i class="fas fa-{% if category == 'success' %}check-circle{% else %}exclamation-circle{% endif %}"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <div class="stats-cards">
+            <div class="stat-card">
+                <h3>Pending Approvals</h3>
+                <div class="count">{{ pending_teachers|length }}</div>
+            </div>
+            <div class="stat-card approved">
+                <h3>Total Teachers</h3>
+                <div class="count">
+                    {% set total = namespace(value=0) %}
+                    {% for teacher in pending_teachers %}
+                        {% set total.value = total.value + 1 %}
+                    {% endfor %}
+                    {{ total.value }}
+                </div>
+            </div>
+        </div>
+        
+        <div class="teachers-table">
+            {% if pending_teachers %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Teacher Name</th>
+                            <th>Email</th>
+                            <th>Subjects</th>
+                            <th>Applied Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for teacher in pending_teachers %}
+                        <tr>
+                            <td>#{{ teacher.id }}</td>
+                            <td>{{ teacher.name }}</td>
+                            <td>{{ teacher.email }}</td>
+                            <td>{{ teacher.subject or 'Not specified' }}</td>
+                            <td>{{ teacher.created_at.strftime('%Y-%m-%d') if teacher.created_at else 'N/A' }}</td>
+                            <td>
+                                <span class="status-badge status-pending">
+                                    <i class="fas fa-clock"></i> Pending
+                                </span>
+                            </td>
+                            <td class="action-buttons">
+                                <a href="/admin/approve-teacher/{{ teacher.id }}" class="btn btn-approve" 
+                                   onclick="return confirm('Approve {{ teacher.name }} as a teacher?')">
+                                    <i class="fas fa-check"></i> Approve
+                                </a>
+                                <a href="/admin/reject-teacher/{{ teacher.id }}" class="btn btn-reject"
+                                   onclick="return confirm('Reject {{ teacher.name }}? This cannot be undone.')">
+                                    <i class="fas fa-times"></i> Reject
+                                </a>
+                                <a href="mailto:{{ teacher.email }}" class="btn btn-view">
+                                    <i class="fas fa-envelope"></i> Email
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-users"></i>
+                    <h3>No Pending Approvals</h3>
+                    <p>All teacher registrations have been processed.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <script>
+        // Auto-refresh page every 60 seconds to check for new requests
+        setTimeout(() => {
+            window.location.reload();
+        }, 60000);
+        
+        // Confirm before approving/rejecting
+        document.querySelectorAll('.btn-approve, .btn-reject').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                if (!confirm(this.getAttribute('data-confirm') || 'Are you sure?')) {
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

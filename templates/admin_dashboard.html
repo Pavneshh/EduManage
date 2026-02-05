@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+</head>
+<body>
+    <h1>Welcome, Administrator {{ username }}!</h1>
+    <p>Date: {{ current_date }}</p>
+    
+    <h2>Statistics</h2>
+    <p>Total Students: {{ total_students }}</p>
+    <p>Active Teachers: {{ active_teachers }}</p>
+    <p>Pending Teachers: {{ pending_teachers }}</p>
+    <p>Total Courses: {{ total_courses }}</p>
+    
+    <h2>Pending Teacher Approvals</h2>
+    {% if pending_teachers_list %}
+        <ul>
+        {% for teacher in pending_teachers_list %}
+            <li>
+                {{ teacher.name }} ({{ teacher.email }}) - {{ teacher.subject }}
+                <a href="/admin/teacher/approve/{{ teacher.id }}">Approve</a> |
+                <a href="/admin/teacher/reject/{{ teacher.id }}">Reject</a>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No pending teacher approvals.</p>
+    {% endif %}
+    
+    <h2>Recent Students</h2>
+    {% if recent_students %}
+        <ul>
+        {% for student in recent_students %}
+            <li>{{ student.name }} - {{ student.email }} - {{ student.course }}</li>
+        {% endfor %}
+        </ul>
+    {% endif %}
+    
+    <nav>
+        <a href="/admin/students">Manage Students</a> |
+        <a href="/admin/teachers">Manage Teachers</a> |
+        <a href="/admin/teachers/pending">Pending Approvals</a> |
+        <a href="/profile">Your Profile</a> |
+        <a href="/logout">Logout</a>
+    </nav>
+</body>
+</html>

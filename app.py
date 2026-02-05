@@ -1,3 +1,4 @@
+from tkinter import Message
 from flask import Flask, render_template, request, redirect, send_file, session, flash, url_for, jsonify
 from flask_mail import Mail
 from db import get_connection
@@ -103,7 +104,9 @@ def add_security_headers(response):
         "default-src 'self'; "
         "script-src 'self' https://accounts.google.com https://*.google.com 'unsafe-inline'; "
         "style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; "
-        "font-src 'self' https://fonts.gstatic.com; "
+        # "font-src 'self' https://fonts.gstatic.com; "
+        # Added cdnjs
+        "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "  # Added cdnjs
         "img-src 'self' data: https:; "
         "connect-src 'self' https://accounts.google.com;"
     )
@@ -255,6 +258,58 @@ def create_security_tables():
         if conn:
             conn.close()
 
+def create_notification_tables():
+    """Create notification tables if they don't exist"""
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        
+        # Create admin notifications table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS admin_notifications (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                admin_id INT,
+                notification_type VARCHAR(50),
+                title VARCHAR(200),
+                message TEXT,
+                status VARCHAR(20) DEFAULT 'unread',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                read_at TIMESTAMP NULL,
+                INDEX idx_admin_status (admin_id, status)
+            )
+        """)
+        
+        # Update teachers table if needed
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS teachers (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                user_id INT,
+                name VARCHAR(100),
+                email VARCHAR(100),
+                subject VARCHAR(100),
+                phone VARCHAR(20),
+                qualification TEXT,
+                status VARCHAR(20) DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                approved_at TIMESTAMP NULL,
+                approved_by INT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        """)
+        
+        conn.commit()
+        logger.info("Notification tables created/updated successfully")
+        
+    except Exception as e:
+        logger.error(f"Error creating notification tables: {e}")
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
 # ================= AUTHENTICATION DECORATORS =================
 
 def login_required(f):
@@ -314,6 +369,9 @@ os.makedirs('logs', exist_ok=True)
 
 # Create security tables on startup
 create_security_tables()
+
+# Create notification tables on startup
+create_notification_tables() 
 
 # ================= GOOGLE OAUTH FUNCTIONS =================
 
@@ -576,85 +634,392 @@ def get_enrollment_years():
 @app.route("/")
 def home():
     return redirect("/login")
-
-# ================= UPDATED REGISTER ROUTE =================
-
-@app.route("/register", methods=["GET", "POST"])
-@limiter.limit("5 per hour", key_func=get_remote_address)
-def register():
+@app.route("/register-role", methods=["GET", "POST"])
+def register_role():
+    """Role-based registration"""
     if request.method == "POST":
-        # Get and validate input
-        username = validate_input(request.form.get("username", "").strip(), max_length=50)
-        email = validate_input(request.form.get("email", "").strip(), max_length=100)
-        password = request.form.get("password", "")
-        full_name = validate_input(request.form.get("full_name", "").strip(), max_length=100)
+        # Get form data
+        role = request.form.get("role")
+        username = request.form.get("username")
+        email = request.form.get("email")
+        password = request.form.get("password")
+        full_name = request.form.get("full_name")
+        courses = request.form.get("courses")
+        admin_code = request.form.get("admin_code", "").strip()
         
-        # Validate required fields
-        if not all([username, email, password]):
-            flash("Username, email, and password are required", "error")
-            return redirect("/register")
+        # Basic check
+        if not all([role, username, email, password, full_name]):
+            flash("All fields required", "error")
+            return redirect("/register-role")
         
-        # Validate email format
-        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-        if not re.match(email_pattern, email):
-            flash('Please enter a valid email address', 'error')
-            return redirect("/register")
-        
-        # Validate password strength
-        if len(password) < 8:
-            flash("Password must be at least 8 characters long", "error")
-            return redirect("/register")
-        
-        if not re.search(r'[A-Za-z]', password) or not re.search(r'\d', password):
-            flash("Password must contain both letters and numbers", "error")
-            return redirect("/register")
+        # Validate based on role
+        if role == "teacher":
+            # Teacher registration requires code "TEACHER"
+            if admin_code.upper() != "TEACHER":
+                flash("Teacher registration requires code: TEACHER (all caps)", "error")
+                return redirect("/register-role")
+                
+        elif role == "admin":
+            # Admin registration requires invitation code
+            # Check if any admin already exists
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM users WHERE user_type = 'admin'")
+            admin_count = cursor.fetchone()[0] or 0
+            cursor.close()
+            conn.close()
+            
+            if admin_count == 0:
+                # First admin - must use special code
+                if admin_code != "FIRST_ADMIN_2024":
+                    flash("First admin requires special invitation code", "error")
+                    return redirect("/register-role")
+            else:
+                # Additional admins - check against stored codes or require existing admin approval
+                if admin_code != "ADMIN_INVITE_2024":  # Change this to a more secure system
+                    flash("Invalid admin invitation code", "error")
+                    return redirect("/register-role")
         
         # Hash password
-        hashed_password = hash_password(password)
-
+        hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+        
         conn = None
         cursor = None
         try:
             conn = get_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(dictionary=True)
             
-            # Check if username or email already exists
-            cursor.execute("SELECT id FROM users WHERE username = %s OR email = %s", 
-                          (username, email))
-            if cursor.fetchone():
-                flash("Username or Email already exists", "error")
-                return redirect("/register")
+            # Determine user type and status
+            if role == "admin":
+                user_type = "admin"
+                user_status = "active"
+            elif role == "teacher":
+                user_type = "teacher"
+                user_status = "pending"  # Teachers need admin approval
+            else:  # student
+                user_type = "student"
+                user_status = "active"
             
-            # Insert new user
-            query = """INSERT INTO users (username, email, password, full_name, user_type, status) 
-                       VALUES (%s, %s, %s, %s, 'student', 'active')"""
-            cursor.execute(query, (username, email, hashed_password, full_name))
+            # 1. Create user
+            cursor.execute("""
+                INSERT INTO users (username, email, password, full_name, user_type, status)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (username, email, hashed_password, full_name, user_type, user_status))
+            
             user_id = cursor.lastrowid
             
-            # Set session
-            session["user_id"] = user_id
-            session["username"] = username
-            session["email"] = email
-            session["name"] = full_name or username
-            session["user_type"] = 'student'
+            # 2. Create role-specific record
+            if role == "teacher":
+                cursor.execute("""
+                    INSERT INTO teachers (user_id, name, email, subject, status, created_at)
+                    VALUES (%s, %s, %s, %s, %s, NOW())
+                """, (user_id, full_name, email, courses, "pending"))
+                
+                # Send notification to admins
+                try:
+                    cursor.execute("""
+                        INSERT INTO admin_notifications 
+                        (admin_id, notification_type, title, message, status, created_at)
+                        SELECT id, 'teacher_registration', 'New Teacher Registration',
+                               CONCAT('Teacher ', %s, ' (', %s, ') has registered and is pending approval'),
+                               'unread', NOW()
+                        FROM users WHERE user_type = 'admin'
+                    """, (full_name, email))
+                except:
+                    pass  # Notification table might not exist
+                
+                flash("Teacher registered successfully! Wait for admin approval.", "success")
+                
+            elif role == "admin":
+                # Create admin profile
+                try:
+                    cursor.execute("""
+                        INSERT INTO admin_profiles (user_id, admin_type, school_name)
+                        VALUES (%s, 'school_admin', %s)
+                    """, (user_id, f"{full_name}'s Institution"))
+                except:
+                    pass
+                
+                flash("Admin account created successfully!", "success")
+                
+            else:  # student
+                # Create student record
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS students (
+                        id INT PRIMARY KEY AUTO_INCREMENT,
+                        user_id INT,
+                        name VARCHAR(100),
+                        email VARCHAR(100),
+                        status VARCHAR(20) DEFAULT 'active',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                
+                cursor.execute("""
+                    INSERT INTO students (user_id, name, email)
+                    VALUES (%s, %s, %s)
+                """, (user_id, full_name, email))
+                
+                # Set session for immediate login
+                session["user_id"] = user_id
+                session["username"] = username
+                session["email"] = email
+                session["name"] = full_name
+                session["user_type"] = "student"
+                
+                flash("Student registered successfully!", "success")
+                conn.commit()
+                return redirect("/student/dashboard")
             
             conn.commit()
-            
-            logger.info(f"New user registered: {username} ({email})")
-            flash("Registration successful! Welcome!", "success")
-            return redirect("/dashboard")
+            return redirect("/login")
             
         except Exception as e:
-            logger.error(f"Registration failed: {e}")
-            flash(f"Registration failed: {str(e)}", "error")
-            return redirect("/register")
+            if conn:
+                conn.rollback()
+            logger.error(f"Error in registration: {str(e)}")
+            flash(f"Error: {str(e)}", "error")
+            return redirect("/register-role")
         finally:
             if cursor:
                 cursor.close()
             if conn:
                 conn.close()
+    
+    # GET - show form
+    return render_template("register_role.html")
 
-    return render_template("register.html")
+# Add these routes for role-specific dashboards
+@app.route("/student/dashboard")
+@login_required
+def student_dashboard():
+    """Student-specific dashboard"""
+    if session.get('user_type') != 'student':
+        flash("Access denied", "error")
+        return redirect("/dashboard")
+    
+    # Student-specific data
+    user_id = session.get("user_id")
+    conn = None
+    cursor = None
+    
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get student info
+        cursor.execute("""
+            SELECT s.*, u.username, u.email 
+            FROM students s 
+            JOIN users u ON s.user_id = u.id 
+            WHERE s.user_id = %s
+        """, (user_id,))
+        student_info = cursor.fetchone()
+        
+        # Get enrolled courses
+        cursor.execute("""
+            SELECT c.* FROM courses c
+            JOIN student_courses sc ON c.id = sc.course_id
+            WHERE sc.student_id = %s
+        """, (user_id,))
+        courses = cursor.fetchall()
+        
+        # Get assignments
+        cursor.execute("""
+            SELECT a.* FROM assignments a
+            WHERE a.course_id IN (
+                SELECT course_id FROM student_courses WHERE student_id = %s
+            )
+            ORDER BY a.due_date ASC
+            LIMIT 10
+        """, (user_id,))
+        assignments = cursor.fetchall()
+        
+    except Exception as e:
+        logger.error(f"Error loading student dashboard: {e}")
+        student_info = None
+        courses = []
+        assignments = []
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+    
+    return render_template("student_dashboard.html",
+                         student_info=student_info,
+                         courses=courses,
+                         assignments=assignments,
+                         username=session.get("username"))
+
+@app.route("/teacher/dashboard")
+@login_required
+def teacher_dashboard():
+    """Teacher-specific dashboard"""
+    if session.get('user_type') != 'teacher':
+        flash("Access denied", "error")
+        return redirect("/dashboard")
+    
+    # Check if teacher is approved
+    user_id = session.get("user_id")
+    conn = None
+    cursor = None
+    
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Check teacher status
+        cursor.execute("""
+            SELECT t.status FROM teachers t
+            WHERE t.user_id = %s
+        """, (user_id,))
+        teacher_status = cursor.fetchone()
+        
+        if not teacher_status or teacher_status['status'] != 'active':
+            return render_template("teacher_pending.html",
+                                 username=session.get("username"))
+        
+        # TEACHER IS APPROVED - SHOW ACTUAL DASHBOARD
+        # Get teacher info
+        cursor.execute("""
+            SELECT t.*, u.username, u.email, u.full_name 
+            FROM teachers t
+            JOIN users u ON t.user_id = u.id
+            WHERE t.user_id = %s
+        """, (user_id,))
+        teacher_info = cursor.fetchone()
+        
+        if not teacher_info:
+            flash("Teacher profile not found", "error")
+            return redirect("/dashboard")
+        
+        # Get assigned courses (you need to implement this based on your schema)
+        cursor.execute("""
+            SELECT c.* FROM courses c
+            WHERE c.teacher_id = %s OR JSON_CONTAINS(c.teacher_ids, %s)
+        """, (user_id, str(user_id)))
+        courses = cursor.fetchall()
+        
+        # Get student count for teacher's courses
+        total_students = 0
+        if courses:
+            course_ids = [str(course['id']) for course in courses]
+            if course_ids:
+                cursor.execute(f"""
+                    SELECT COUNT(DISTINCT sc.student_id) as student_count
+                    FROM student_courses sc
+                    WHERE sc.course_id IN ({','.join(course_ids)})
+                """)
+                result = cursor.fetchone()
+                total_students = result['student_count'] if result else 0
+        
+        # Get recent assignments
+        cursor.execute("""
+            SELECT a.*, c.course_name 
+            FROM assignments a
+            LEFT JOIN courses c ON a.course_id = c.id
+            WHERE a.teacher_id = %s 
+            ORDER BY a.due_date ASC 
+            LIMIT 5
+        """, (user_id,))
+        recent_assignments = cursor.fetchall()
+        
+        # Calculate stats
+        total_courses = len(courses)
+        upcoming_assignments = len([a for a in recent_assignments 
+                                  if a['due_date'] and a['due_date'] >= datetime.now().date()])
+        
+        # Render the actual teacher dashboard
+        return render_template("teacher_dashboard.html",
+                             teacher_info=teacher_info,
+                             courses=courses,
+                             total_courses=total_courses,
+                             total_students=total_students,
+                             recent_assignments=recent_assignments,
+                             upcoming_assignments=upcoming_assignments,
+                             username=session.get("username"),
+                             current_date=datetime.now().strftime("%A, %B %d, %Y"))
+        
+    except Exception as e:
+        logger.error(f"Error loading teacher dashboard: {e}", exc_info=True)
+        flash(f"Error loading dashboard: {str(e)}", "error")
+        return redirect("/dashboard")
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+# Add admin approval route
+@app.route("/admin/approve-teacher/<int:teacher_id>")
+@admin_required
+def approve_teacher(teacher_id):
+    """Admin approves teacher registration"""
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get admin ID from session
+        admin_id = session.get('user_id')
+        
+        # DEBUG: Log what we're trying to do
+        logger.info(f"Approving teacher {teacher_id} by admin {admin_id}")
+        
+        # Update teacher status - FIXED SYNTAX
+        cursor.execute("""
+            UPDATE teachers 
+            SET status = 'active', 
+                approved_at = NOW(),
+                approved_by = %s,
+                reviewed_by = %s
+            WHERE id = %s
+        """, (admin_id, admin_id, teacher_id))
+        
+        # Also update the user status
+        cursor.execute("""
+            UPDATE users u
+            JOIN teachers t ON u.id = t.user_id
+            SET u.status = 'active'
+            WHERE t.id = %s
+        """, (teacher_id,))
+        
+        conn.commit()
+        
+        # Get teacher name for flash message
+        cursor.execute("SELECT name FROM teachers WHERE id = %s", (teacher_id,))
+        teacher = cursor.fetchone()
+        
+        if teacher:
+            flash(f"Teacher '{teacher['name']}' approved successfully!", "success")
+            logger.info(f"Successfully approved teacher {teacher['name']} (ID: {teacher_id})")
+        else:
+            flash(f"Teacher ID {teacher_id} approved successfully", "success")
+        
+        return redirect("/admin/teachers-pending")
+        
+    except Exception as e:
+        # More detailed error logging
+        error_msg = str(e)
+        logger.error(f"Error approving teacher {teacher_id}: {error_msg}")
+        logger.error(f"Full error: {e}", exc_info=True)
+        
+        # Check specific MySQL error
+        if "1054" in error_msg:
+            flash(f"Database error: Missing column. Please check database structure.", "error")
+        elif "1146" in error_msg:
+            flash(f"Database error: Table doesn't exist.", "error")
+        else:
+            flash(f"Error approving teacher: {error_msg}", "error")
+        
+        return redirect("/admin/teachers-pending")
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 # ================= UPDATED LOGIN ROUTE WITH SECURITY =================
 
@@ -725,7 +1090,13 @@ def login():
                 log_login_attempt(user['id'], ip_address, True, user_agent)
                 
                 flash("Login successful!", "success")
-                return redirect("/dashboard")
+                # REDIRECT BASED ON USER TYPE
+                if user['user_type'] == 'student':
+                    return redirect("/student/dashboard")
+                elif user['user_type'] == 'teacher':
+                    return redirect("/teacher/dashboard")
+                else:  # admin or other
+                    return redirect("/dashboard")
             else:
                 # Log failed attempt
                 log_login_attempt(user['id'], ip_address, False, user_agent)
@@ -745,6 +1116,210 @@ def login():
 
     # GET request - show login page
     return render_template("login.html", google_client_id=GOOGLE_CLIENT_ID)
+
+@app.route("/admin/teachers-pending")
+@admin_required
+def pending_teachers():
+    """Admin view for pending teacher approvals"""
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get all pending teachers
+        cursor.execute("""
+            SELECT t.*, u.username, u.email as user_email, u.full_name
+            FROM teachers t
+            JOIN users u ON t.user_id = u.id
+            WHERE t.status = 'pending'
+            ORDER BY t.created_at DESC
+        """)
+        pending_teachers_list = cursor.fetchall()
+        
+        # Debug: Log what we found
+        logger.info(f"Found {len(pending_teachers_list)} pending teachers")
+        
+        return render_template("admin_pending_teachers.html",
+                             pending_teachers=pending_teachers_list,
+                             username=session.get("username"),
+                             user_id=session.get("user_id"))
+                             
+    except Exception as e:
+        logger.error(f"Error loading pending teachers: {e}", exc_info=True)
+        flash(f"Error loading pending teachers: {str(e)}", "error")
+        return redirect("/dashboard")
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+@app.route("/admin/reject-teacher/<int:teacher_id>")
+@admin_required
+def reject_teacher(teacher_id):
+    """Admin rejects teacher registration"""
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        admin_id = session.get('user_id')
+        
+        # Update teacher status to rejected with timestamp
+        cursor.execute("""
+            UPDATE teachers 
+            SET status = 'rejected', 
+                rejected_at = NOW(),
+                reviewed_by = %s
+            WHERE id = %s
+        """, (admin_id, teacher_id))
+        
+        # Get teacher info for notification
+        cursor.execute("SELECT name, email FROM teachers WHERE id = %s", (teacher_id,))
+        teacher = cursor.fetchone()
+        
+        conn.commit()
+        
+        if teacher:
+            flash(f"Teacher '{teacher['name']}' rejected successfully", "success")
+        else:
+            flash(f"Teacher ID {teacher_id} rejected successfully", "success")
+        
+    except Exception as e:
+        logger.error(f"Error rejecting teacher: {e}")
+        flash(f"Error rejecting teacher: {str(e)}", "error")
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+    
+    return redirect("/admin/teachers-pending")
+
+def send_teacher_notification(email, name, action):
+    """Send notification email to teacher"""
+    try:
+        if action == 'approved':
+            subject = "Your Teacher Account Has Been Approved"
+            body = f"""
+            Dear {name},
+            
+            Your teacher account has been approved by the administrator.
+            
+            You can now login to the portal and access your teacher dashboard.
+            
+            Login URL: {request.host_url}login
+            
+            Best regards,
+            School Administration Team
+            """
+        else:  # rejected
+            subject = "Your Teacher Registration Status"
+            body = f"""
+            Dear {name},
+            
+            Thank you for your interest in becoming a teacher.
+            
+            Unfortunately, your registration has been reviewed and we're unable
+            to approve your application at this time.
+            
+            If you have any questions, please contact the administration.
+            
+            Best regards,
+            School Administration Team
+            """
+        
+        msg = Message(subject,
+                      sender=app.config['MAIL_USERNAME'],
+                      recipients=[email])
+        msg.body = body
+        mail.send(msg)
+        logger.info(f"Notification email sent to {email}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send email: {e}")
+        return False  
+    
+@app.route("/create-admin", methods=["GET", "POST"])
+def create_admin():
+    """Create the first admin user (one-time use)"""
+    
+    # Check if admin already exists
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM users WHERE user_type = 'admin'")
+        admin_count = cursor.fetchone()[0] or 0
+        
+        if admin_count > 0:
+            flash("Admin user already exists!", "error")
+            return redirect("/login")
+    except:
+        pass
+    finally:
+        if cursor: cursor.close()
+        if conn: conn.close()
+    
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "").strip()
+        full_name = request.form.get("full_name", "").strip()
+        admin_key = request.form.get("admin_key", "").strip()
+        
+        # Verify admin creation key
+        if admin_key != "SETUP_ADMIN_2024":
+            flash("Invalid admin setup key", "error")
+            return redirect("/create-admin")
+        
+        if not all([username, email, password, full_name]):
+            flash("All fields are required", "error")
+            return redirect("/create-admin")
+        
+        conn = None
+        cursor = None
+        try:
+            conn = get_connection()
+            cursor = conn.cursor()
+            
+            # Check if username/email exists
+            cursor.execute("SELECT id FROM users WHERE username = %s OR email = %s", 
+                          (username, email))
+            if cursor.fetchone():
+                flash("Username or email already exists", "error")
+                return redirect("/create-admin")
+            
+            # Hash password
+            import bcrypt
+            hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12))
+            
+            # Create admin user
+            cursor.execute("""
+                INSERT INTO users (username, email, password, full_name, user_type, status)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (username, email, hashed_password, full_name, "admin", "active"))
+            
+            conn.commit()
+            
+            flash("Admin account created successfully! You can now login.", "success")
+            return redirect("/login")
+            
+        except Exception as e:
+            logger.error(f"Error creating admin: {e}")
+            flash(f"Error creating admin: {e}", "error")
+            return redirect("/create-admin")
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+    
+    # GET request - show form
+    return render_template("create_admin.html")
 
 # ================= GOOGLE OAUTH ROUTES =================
 
@@ -783,10 +1358,17 @@ def google_auth():
                 if result.get('is_new_user'):
                     message = "Welcome! Your Google account has been linked."
                 
+                # Determine redirect based on user type
+                redirect_url = "/dashboard"
+                if user['user_type'] == 'student':
+                    redirect_url = "/student/dashboard"
+                elif user['user_type'] == 'teacher':
+                    redirect_url = "/teacher/dashboard"
+
                 return jsonify({
                     "success": True, 
                     "message": message,
-                    "redirect": "/dashboard"
+                    "redirect": redirect_url  # UPDATED
                 }), 200
             else:
                 # User doesn't exist, ask them to register first
@@ -836,10 +1418,17 @@ def google_register():
                 if result.get('is_new_user'):
                     message = "Welcome! Your account has been created with Google."
                 
+                # FIXED: Determine redirect based on user type
+                redirect_url = "/dashboard"
+                if user['user_type'] == 'student':
+                    redirect_url = "/student/dashboard"
+                elif user['user_type'] == 'teacher':
+                    redirect_url = "/teacher/dashboard"
+                
                 return jsonify({
                     "success": True, 
                     "message": message,
-                    "redirect": "/dashboard"
+                    "redirect": redirect_url  # UPDATED
                 }), 200
             else:
                 return jsonify({"success": False, "message": result.get('error', 'Registration failed')}), 400
@@ -995,6 +1584,20 @@ def dashboard():
             cursor.execute("SELECT * FROM admin_profiles WHERE id = %s", (admin_profile_id,))
             admin_profile = cursor.fetchone()
         
+        # ========== ADD NOTIFICATION COUNT ==========
+        unread_notifications = 0
+        try:
+            cursor.execute("""
+                SELECT COUNT(*) as unread_count 
+                FROM admin_notifications 
+                WHERE admin_id = %s AND status = 'unread'
+            """, (user_id,))
+            notification_result = cursor.fetchone()
+            unread_notifications = notification_result['unread_count'] if notification_result else 0
+        except Exception as e:
+            logger.debug(f"Notifications table might not exist or error: {str(e)}")
+            # Notifications table might not exist yet
+        
         # ========== USER-SPECIFIC DATA FILTERING ==========
         
         # Total students - ONLY show user's students
@@ -1128,12 +1731,13 @@ def dashboard():
             total_students=total_students,
             active_teachers=active_teachers,
             total_courses=total_courses,
-            active_schedules=active_schedules,  # NEW
+            active_schedules=active_schedules,
             attendance_rate=attendance_rate,
             recent_students=recent_students,
             recent_teachers=recent_teachers,
-            upcoming_assignments=upcoming_assignments,  # NEW
+            upcoming_assignments=upcoming_assignments,
             admin_profile=admin_profile_data,
+            unread_notifications=unread_notifications,  # NEW PARAMETER ADDED
             is_super_admin=user_type == 'super_admin'
         )
         
@@ -1150,19 +1754,20 @@ def dashboard():
             total_students=0,
             active_teachers=0,
             total_courses=0,
-            active_schedules=0,  # NEW
+            active_schedules=0,
             attendance_rate=0,
             recent_students=[],
             recent_teachers=[],
-            upcoming_assignments=[],  # NEW
-            admin_profile=None
+            upcoming_assignments=[],
+            admin_profile=None,
+            unread_notifications=0,  # NEW PARAMETER ADDED
+            is_super_admin=user_type == 'super_admin'
         )
     finally:
         if cursor:
             cursor.close()
         if conn:
             conn.close()
-
 @app.route("/admin-profile", methods=["GET", "POST"])
 @login_required
 def admin_profile():

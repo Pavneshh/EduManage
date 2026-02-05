@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        body {
+            background: #f5f7fa;
+            color: #333;
+        }
+        
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            width: 250px;
+            background: linear-gradient(180deg, #2c3e50, #1a252f);
+            color: white;
+            padding: 20px 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .sidebar-header h2 {
+            font-size: 22px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .sidebar-header h2 i {
+            color: #3498db;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+        }
+        
+        .user-info i {
+            font-size: 40px;
+            color: #3498db;
+        }
+        
+        .user-details h3 {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        
+        .user-details p {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+            padding: 0 15px;
+        }
+        
+        .sidebar-menu li {
+            margin-bottom: 5px;
+        }
+        
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .sidebar-menu a:hover, .sidebar-menu a.active {
+            background: rgba(52, 152, 219, 0.2);
+            color: white;
+        }
+        
+        .sidebar-menu a i {
+            width: 20px;
+            text-align: center;
+        }
+        
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            padding: 20px;
+        }
+        
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 28px;
+        }
+        
+        .date-display {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: transform 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+        
+        .stat-icon.courses { background: #3498db; }
+        .stat-icon.students { background: #2ecc71; }
+        .stat-icon.assignments { background: #e74c3c; }
+        .stat-icon.pending { background: #f39c12; }
+        
+        .stat-info h3 {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        
+        .stat-info .number {
+            font-size: 28px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .welcome-section {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .welcome-icon {
+            font-size: 60px;
+            color: #3498db;
+            margin-bottom: 20px;
+        }
+        
+        .welcome-section h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .welcome-section p {
+            color: #7f8c8d;
+            line-height: 1.6;
+            max-width: 600px;
+            margin: 0 auto 25px;
+        }
+        
+        .quick-actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .action-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+        
+        .action-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .action-btn.secondary {
+            background: #95a5a6;
+        }
+        
+        .action-btn.secondary:hover {
+            background: #7f8c8d;
+        }
+        
+        .action-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        
+        .action-btn:disabled:hover {
+            transform: none;
+        }
+        
+        .coming-soon-badge {
+            background: #f39c12;
+            color: white;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: relative;
+                height: auto;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .quick-actions {
+                flex-direction: column;
+            }
+            
+            .action-btn {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-chalkboard-teacher"></i> Teacher Portal</h2>
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <div class="user-details">
+                        <h3>{{ teacher_info.full_name or teacher_info.name }}</h3>
+                        <p>{{ teacher_info.email }}</p>
+                        <p>{{ teacher_info.subject }}</p>
+                        <p style="color: #2ecc71; font-size: 11px; margin-top: 5px;">
+                            <i class="fas fa-check-circle"></i> Verified Teacher
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <ul class="sidebar-menu">
+                <li><a href="/teacher/dashboard" class="active"><i class="fas fa-home"></i> Dashboard</a></li>
+                <!-- REMOVED: Courses, Assignments, Students, Schedule links -->
+                <li><a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <div>
+                    <h1>Teacher Dashboard</h1>
+                    <div class="date-display">{{ current_date }}</div>
+                </div>
+                <div>
+                    <span style="color: #2ecc71; font-weight: 500;">
+                        <i class="fas fa-check-circle"></i> Account Active
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Welcome Section -->
+            <div class="welcome-section">
+                <div class="welcome-icon">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                </div>
+                <h2>Welcome, {{ teacher_info.full_name or teacher_info.name }}!</h2>
+                <p>Your teacher account has been successfully activated. You can now access your personalized teaching dashboard. More features will be available soon as we continue to build out the teacher portal.</p>
+                
+                <div class="quick-actions">
+                    <button class="action-btn" disabled>
+                        <i class="fas fa-book"></i> My Courses <span class="coming-soon-badge">Coming Soon</span>
+                    </button>
+                    <button class="action-btn" disabled>
+                        <i class="fas fa-tasks"></i> My Assignments <span class="coming-soon-badge">Coming Soon</span>
+                    </button>
+                    <button class="action-btn" disabled>
+                        <i class="fas fa-users"></i> My Students <span class="coming-soon-badge">Coming Soon</span>
+                    </button>
+                    <button class="action-btn" disabled>
+                        <i class="fas fa-calendar-alt"></i> My Schedule <span class="coming-soon-badge">Coming Soon</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Stats Grid (Simplified) -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon courses">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Assigned Courses</h3>
+                        <div class="number">{{ total_courses or 0 }}</div>
+                        <p style="font-size: 12px; color: #95a5a6;">Courses you're teaching</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon students">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Total Students</h3>
+                        <div class="number">{{ total_students or 0 }}</div>
+                        <p style="font-size: 12px; color: #95a5a6;">Students in your courses</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon assignments">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Active Assignments</h3>
+                        <div class="number">{{ upcoming_assignments or 0 }}</div>
+                        <p style="font-size: 12px; color: #95a5a6;">Assignments pending</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon pending">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Account Status</h3>
+                        <div class="number" style="color: #2ecc71;">Active</div>
+                        <p style="font-size: 12px; color: #95a5a6;">Approved on {{ teacher_info.approved_at.strftime('%b %d, %Y') if teacher_info.approved_at else 'Recently' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add click effect to stat cards
+            const statCards = document.querySelectorAll('.stat-card');
+            statCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    this.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        this.style.transform = '';
+                    }, 150);
+                });
+            });
+            
+            // Update the time every minute
+            function updateTime() {
+                const now = new Date();
+                const options = { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                };
+                const dateElements = document.querySelectorAll('.date-display');
+                dateElements.forEach(el => {
+                    el.textContent = now.toLocaleDateString('en-US', options);
+                });
+            }
+            
+            updateTime();
+            setInterval(updateTime, 60000);
+            
+            // Disable coming soon buttons
+            document.querySelectorAll('.action-btn:disabled').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    alert('This feature is coming soon! We are working on building out the teacher portal.');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
